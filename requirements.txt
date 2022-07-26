@@ -16,5 +16,6 @@ numpy
 tensorflow
 focal_loss
 scikit_image
+sklearn
 
 h5py

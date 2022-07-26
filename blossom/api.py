@@ -109,15 +109,15 @@ def predict(**kwargs):
         x,y,z = size_
         print("IMAGE")
         model_new = tf.keras.models.load_model("best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
-        
+        print("3")
         prediction = model_new.predict(image_reshaped)
-    # print("4")
+        print("4")
         preds_test_t = (prediction > 0.2)
-    # print("5")
+        print("5")
         preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
-    # print("6")
+        print("6")
         imsave(fname="demo.png", arr=np.squeeze(preds_test_t))
-    # print("SAVE")
+        print("SAVE")
    
     # Return the image directly
     if kwargs['accept'] == 'image/png':

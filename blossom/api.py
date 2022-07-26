@@ -27,7 +27,6 @@ import warnings
 
 import numpy as np
 import imageio
-import cv2
 import matplotlib.pyplot as plt
 
 from itertools import chain
@@ -39,7 +38,6 @@ from tensorflow.keras.models import Model, load_model
 
 import tensorflow as tf
 import imshowpair
-from PIL import Image
 from collections import Counter
 from focal_loss import BinaryFocalLoss
 

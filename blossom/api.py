@@ -108,7 +108,7 @@ def predict(**kwargs):
         image_reshaped, size_ = redimension(filepath)
         x,y,z = size_
         print("IMAGE")
-        model_new = tf.keras.models.load_model("best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
+        model_new = tf.keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
         print("3")
         prediction = model_new.predict(image_reshaped)
         print("4")

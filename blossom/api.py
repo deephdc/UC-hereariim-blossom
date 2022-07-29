@@ -71,11 +71,11 @@ def get_predict_args():
             location="form",
             description="Image",  # needed to be parsed by UI
         ),
-        "accept": fields.Str(
-            description="Media type(s) that is/are acceptable for the response.",
-            missing='application/zip',
-            validate=validate.OneOf(['application/zip', 'image/png', 'application/json']),
-        ),
+        # "accept": fields.Str(
+        #     description="Media type(s) that is/are acceptable for the response.",
+        #     missing='application/zip',
+        #     validate=validate.OneOf(['application/zip', 'image/png', 'application/json']),
+        # ),
     }
     return arg_dict
 
@@ -120,29 +120,29 @@ def predict(**kwargs):
         print("SAVE")
    
     # Return the image directly
-    if kwargs['accept'] == 'image/png':
+    # if kwargs['accept'] == 'image/png':
         # img = Image.open(originalname)
         # return img.save("output")
         
         return open('demo.png','rb')
     
     # Return a zip
-    elif kwargs['accept'] == 'application/zip':
+    # elif kwargs['accept'] == 'application/zip':
 
-        zip_dir = tempfile.TemporaryDirectory()
+    #     zip_dir = tempfile.TemporaryDirectory()
 
         # Add original image to output zip
-        shutil.copyfile("demo.png", zip_dir.name + "/demo.png")
+    #     shutil.copyfile("demo.png", zip_dir.name + "/demo.png")
         # Add for example a demo txt file
-        with open(f'{zip_dir.name}/demo.txt', 'w') as f:
-            f.write('Add here any additional information!')
+    #     with open(f'{zip_dir.name}/demo.txt', 'w') as f:
+    #         f.write('Add here any additional information!')
 
         # Pack dir into zip and return it
-        shutil.make_archive(
-            zip_dir.name,
-            format='zip',
-            root_dir=zip_dir.name,
-        )
-        zip_path = zip_dir.name + '.zip'
+    #     shutil.make_archive(
+    #         zip_dir.name,
+    #         format='zip',
+    #         root_dir=zip_dir.name,
+    #     )
+    #     zip_path = zip_dir.name + '.zip'
 
-        return open(zip_path, 'rb')
+    #     return open(zip_path, 'rb')

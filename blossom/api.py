@@ -116,33 +116,45 @@ def predict(**kwargs):
         print("5")
         preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
         print("6")
-        imsave(fname="demo.png", arr=np.squeeze(preds_test_t))
+        output_dir = tempfile.TemporaryDirectory()
+        imsave(fname=os.path.join(output_dir,originalname), arr=np.squeeze(preds_test_t))
         print("SAVE")
-   
-    # Return the image directly
-    # if kwargs['accept'] == 'image/png':
-        # img = Image.open(originalname)
-        # return img.save("output")
-        
-        return open('demo.png','rb')
+        return open(os.path.join(output_dir,originalname),'rb')
     
-    # Return a zip
-    # elif kwargs['accept'] == 'application/zip':
+    elif originalname[-3:] in ['zip','ZIP']:
+        zip_dir = tempfile.TemporaryDirectory()
 
-    #     zip_dir = tempfile.TemporaryDirectory()
+        with ZipFile(filepath,'r') as zipObject:
+            listOfFileNames = zipObject.namelist()
+            for i in range(len(listOfFileNames)):
+                zipObject.extract(listOfFileNames[i],path=zip_dir.name)
 
-        # Add original image to output zip
-    #     shutil.copyfile("demo.png", zip_dir.name + "/demo.png")
-        # Add for example a demo txt file
-    #     with open(f'{zip_dir.name}/demo.txt', 'w') as f:
-    #         f.write('Add here any additional information!')
+        dico = {}
+        for x in os.listdir(zip_dir.name):
+            dico[x] = os.path.join(zip_dir.name,x)
 
-        # Pack dir into zip and return it
-    #     shutil.make_archive(
-    #         zip_dir.name,
-    #         format='zip',
-    #         root_dir=zip_dir.name,
-    #     )
-    #     zip_path = zip_dir.name + '.zip'
+        dico_image_reshaped = {}
+        dico_size_ = {}
+        for ids in list(dico.keys()):
+            image_reshaped, size_ = redimension(dico[ids])
+            dico_image_reshaped[ids] = image_reshaped
+            dico_size_ [ids] = size_
 
-    #     return open(zip_path, 'rb')
+        model_new = tf.keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
+        print("3")
+
+        dico_prediction = {}
+        output_dir = tempfile.TemporaryDirectory()
+
+        for ids in dico.keys():
+            prediction = model_new.predict(dico_image_reshaped[ids])
+            x,y,z = dico_size_[ids]
+            preds_test_t = (prediction > 0.2)
+            preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
+            dico_prediction[ids] = preds_test_t
+            imsave(fname=os.path.join(output_dir.name,ids),arr=np.squeeze(preds_test_t))
+
+        print(output_dir.name)
+        shutil.make_archive(output_dir.name,format="zip",root_dir=output_dir.name,)
+        zip_path = zip_dir.name + ".zip"
+        return open(zip_path,"rb")

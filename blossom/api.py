@@ -43,7 +43,7 @@ import tensorflow as tf
 import imshowpair
 from collections import Counter
 from focal_loss import BinaryFocalLoss
-
+import pathlib
 
 def _catch_error(f):
     @wraps(f)
@@ -74,11 +74,11 @@ def get_predict_args():
             location="form",
             description="Image",  # needed to be parsed by UI
         ),
-        # "accept": fields.Str(
-        #     description="Media type(s) that is/are acceptable for the response.",
-        #     missing='application/zip',
-        #     validate=validate.OneOf(['application/zip', 'image/png', 'application/json']),
-        # ),
+        "accept": fields.Str(
+            description="Media type(s) that is/are acceptable for the response.",
+            missing='application/zip',
+            validate=validate.OneOf(['application/zip', 'image/png', 'application/json']),
+        ),
     }
     return arg_dict
 
@@ -110,20 +110,17 @@ def predict(**kwargs):
 
         image_reshaped, size_ = redimension(filepath)
         x,y,z = size_
-        print("2")
-        print("--")
-        model_new = tf.keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
-        print("3")
+        model_new = tf.keras.models.load_model(os.path.join(pathlib.Path().resolve(),"blossom/blossom/models/best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
         prediction = model_new.predict(image_reshaped)
-        print("4")
         preds_test_t = (prediction > 0.2)
-        print("5")
         preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
-        print("6")
         output_dir = tempfile.TemporaryDirectory()
         imsave(fname=os.path.join(output_dir.name,originalname), arr=np.squeeze(preds_test_t))
-        print("SAVE")
-        return open(os.path.join(output_dir.name,originalname),'rb')
+
+        # return open(os.path.join(output_dir.name,originalname),'rb')
+        shutil.make_archive(output_dir.name,format="zip",root_dir=output_dir.name,)
+        zip_path = output_dir.name + ".zip"
+        return open(zip_path,"rb")
     
     elif originalname[-3:] in ['zip','ZIP']:
         zip_dir = tempfile.TemporaryDirectory()
@@ -144,7 +141,7 @@ def predict(**kwargs):
             dico_image_reshaped[ids] = image_reshaped
             dico_size_ [ids] = size_
 
-        model_new = keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
+        model_new = tf.keras.models.load_model(os.path.join(pathlib.Path().resolve(),"blossom/blossom/models/best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
 
         dico_prediction = {}
         output_dir = tempfile.TemporaryDirectory()

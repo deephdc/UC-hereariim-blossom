@@ -9,7 +9,9 @@ from skimage.io import imread, imsave, imread_collection, concatenate_images
 
 from tensorflow import keras
 from focal_loss import BinaryFocalLoss
-from tensorflow.keras import backend as K
+from tensorflow import keras
+
+# from tensorflow.keras import backend as K
 import numpy as np
 from skimage.transform import resize
 
@@ -34,7 +36,8 @@ from skimage.transform import resize
 from skimage.morphology import label
 from skimage.color import rgb2gray
 
-from tensorflow.keras.models import Model, load_model
+
+# from tensorflow.keras.models import Model, load_model
 
 import tensorflow as tf
 import imshowpair
@@ -98,17 +101,17 @@ def predict(**kwargs):
 
     def dice_coefficient(y_true,y_pred):
         eps = 1e-6
-        y_true_f = K.flatten(y_true)
-        y_pred_f = K.flatten(y_pred)
-        intersection =K.sum(y_true_f*y_pred_f)
-        return (2. * intersection) / (K.sum(y_true_f * y_true_f) + K.sum(y_pred_f * y_pred_f) + eps)
+        y_true_f = keras.backend.flatten(y_true)
+        y_pred_f = keras.backend.flatten(y_pred)
+        intersection =keras.backend.sum(y_true_f*y_pred_f)
+        return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps)
     
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
 
         image_reshaped, size_ = redimension(filepath)
         x,y,z = size_
-        print("IMAGE")
-        model_new = tf.keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
+        print("IMAGEX")
+        model_new = keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
         print("3")
         prediction = model_new.predict(image_reshaped)
         print("4")
@@ -140,7 +143,7 @@ def predict(**kwargs):
             dico_image_reshaped[ids] = image_reshaped
             dico_size_ [ids] = size_
 
-        model_new = tf.keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
+        model_new = keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
         print("3")
 
         dico_prediction = {}

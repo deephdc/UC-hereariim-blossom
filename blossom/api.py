@@ -110,8 +110,9 @@ def predict(**kwargs):
 
         image_reshaped, size_ = redimension(filepath)
         x,y,z = size_
-        print("IMAGEX")
-        model_new = keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
+        print("2")
+        print("--")
+        model_new = tf.keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
         print("3")
         prediction = model_new.predict(image_reshaped)
         print("4")
@@ -120,9 +121,9 @@ def predict(**kwargs):
         preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
         print("6")
         output_dir = tempfile.TemporaryDirectory()
-        imsave(fname=os.path.join(output_dir,originalname), arr=np.squeeze(preds_test_t))
+        imsave(fname=os.path.join(output_dir.name,originalname), arr=np.squeeze(preds_test_t))
         print("SAVE")
-        return open(os.path.join(output_dir,originalname),'rb')
+        return open(os.path.join(output_dir.name,originalname),'rb')
     
     elif originalname[-3:] in ['zip','ZIP']:
         zip_dir = tempfile.TemporaryDirectory()
@@ -144,7 +145,6 @@ def predict(**kwargs):
             dico_size_ [ids] = size_
 
         model_new = keras.models.load_model("./blossom/blossom/models/best_model_FL_BCE_0_5_model.h5",custom_objects={"dice_coefficient" : dice_coefficient})
-        print("3")
 
         dico_prediction = {}
         output_dir = tempfile.TemporaryDirectory()

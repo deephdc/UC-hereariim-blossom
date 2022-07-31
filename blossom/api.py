@@ -21,6 +21,7 @@ from webargs import fields, validate
 import matplotlib.pyplot as plt
 from sklearn.metrics import f1_score
 import blossom.config as cfg
+import blossom.path as paths
 from keras import backend
 import os
 import sys
@@ -110,7 +111,7 @@ def predict(**kwargs):
 
         image_reshaped, size_ = redimension(filepath)
         x,y,z = size_
-        model_new = tf.keras.models.load_model(os.path.join(pathlib.Path().resolve(),"blossom/blossom/models/best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
+        model_new = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
         prediction = model_new.predict(image_reshaped)
         preds_test_t = (prediction > 0.2)
         preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
@@ -141,7 +142,7 @@ def predict(**kwargs):
             dico_image_reshaped[ids] = image_reshaped
             dico_size_ [ids] = size_
 
-        model_new = tf.keras.models.load_model(os.path.join(pathlib.Path().resolve(),"blossom/blossom/models/best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
+        model_new = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
 
         dico_prediction = {}
         output_dir = tempfile.TemporaryDirectory()

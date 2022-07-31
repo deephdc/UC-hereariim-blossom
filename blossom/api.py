@@ -156,5 +156,5 @@ def predict(**kwargs):
 
         print(output_dir.name)
         shutil.make_archive(output_dir.name,format="zip",root_dir=output_dir.name,)
-        zip_path = zip_dir.name + ".zip"
+        zip_path = output_dir.name + ".zip"
         return open(zip_path,"rb")

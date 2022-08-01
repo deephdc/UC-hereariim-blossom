@@ -102,6 +102,7 @@ def train(**args):
         A = os.listdir(path)      
         # for i in tqdm(range(len(A)),'train'):
         for i in range(len(A)):
+            print(os.path.join(path,A[i]))
             img = imread(os.path.join(path,A[i]))
             dico[A[i]]=np.array(img)
         return dico
@@ -112,11 +113,14 @@ def train(**args):
         
         # for i in tqdm(range(len(A)),'test'):
         for i in range(len(A)):
+            print(os.path.join(path,A[i]))
             img = imread(os.path.join(path,A[i]))
             dico[A[i]]=np.array(img)
         return dico
 
+    print("train")
     image_ = fabriquer_train(path_image_data)
+    print("test")
     masks_ = fabriquer_test(path_masks_data)
     print("Input done")
     

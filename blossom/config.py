@@ -25,6 +25,8 @@ if 'APP_INPUT_OUTPUT_BASE_DIR' in os.environ:
 
 DATA_DIR = os.path.join(IN_OUT_BASE_DIR, 'data')
 MODELS_DIR = os.path.join(IN_OUT_BASE_DIR, 'models')
+DATA_IMAGE = os.path.join(DATA_DIR,'train_data/images')
+DATA_MASK = os.path.join(DATA_DIR,'train_data/masks')
 
 # Input parameters for predict() (deepaas>=1.0.0)
 class PredictArgsSchema(Schema):

@@ -13,3 +13,5 @@ def get_base_dir():
 def get_models_dir():
     return os.path.join(get_base_dir(), "blossom/models")
 
+def get_data_dir():
+    return os.path.join(get_base_dir(), "dataset")

@@ -75,21 +75,29 @@ def get_metadata():
     return metadata
 
 def get_train_args():
-    """
-    Input fields for the user (inference)
-    """
     arg_dict = {
-        "filtre": fields.Int(
-            required=False,
-            missing=3,
-        ),
-        "learning_rate": fields.Float(
-            required=False,
+        "learning_rate": fields.Str(
+            required = False,
             missing=0.0007,
+            description="learning rate",
+        ),
+        "filtre": fields.Str(
+            required = False,
+            missing=3,
+            description="filtre",
+        ),
+        "gamma": fields.Str(
+            required = False,
+            missing=0.2,
+            description="gamma",
+        ),
+        "batch_size": fields.Str(
+            required = False,
+            missing=2,
+            description="batch_size",
         ),
     }
     return arg_dict
-
 
 def train(**args):
     output={}

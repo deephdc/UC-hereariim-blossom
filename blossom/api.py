@@ -389,7 +389,7 @@ def train(**args):
         output["retrain model"] = "worse"
     else:
         output["retrain model"] = "better"
-
+    print(output)
     return output
 
 

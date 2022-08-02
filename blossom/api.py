@@ -90,6 +90,7 @@ def get_train_args():
     }
     return arg_dict
 
+
 def train(**args):
     output={}
     output["hyperparameter"]=args
@@ -102,7 +103,6 @@ def train(**args):
         A = os.listdir(path)      
         # for i in tqdm(range(len(A)),'train'):
         for i in range(len(A)):
-            print(os.path.join(path,A[i]))
             img = imread(os.path.join(path,A[i]))
             dico[A[i]]=np.array(img)
         return dico
@@ -110,10 +110,8 @@ def train(**args):
     def fabriquer_test(path):
         dico = {}
         A = os.listdir(path)
-        
         # for i in tqdm(range(len(A)),'test'):
         for i in range(len(A)):
-            print(os.path.join(path,A[i]))
             img = imread(os.path.join(path,A[i]))
             dico[A[i]]=np.array(img)
         return dico
@@ -124,8 +122,6 @@ def train(**args):
     masks_ = fabriquer_test(path_masks_data)
     print("Input done")
     
-
-
     image_name = list(image_.keys())
     masks_name = list(masks_.keys())
 
@@ -145,6 +141,7 @@ def train(**args):
         # for n, id_ in tqdm(enumerate(ids), total=len(ids)):
         for n, id_ in enumerate(ids):
             # we'll be using skimage library for reading file
+            print(len(image_))
             img = image_[id_][:,:,:IMG_CHANNELS]
             img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
             X[n] = img
@@ -157,6 +154,7 @@ def train(**args):
         # for n, id_ in tqdm(enumerate(ids), total=len(ids)):
         for n, id_ in enumerate(ids):
             mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+            print(len(masks_))
             masque_ = masks_[id_]
             gray_file = rgb2gray(masque_)
             threshold = threshold_otsu(gray_file)
@@ -265,12 +263,13 @@ def train(**args):
     model.summary()
 
 
-    model.load_weights('final_weight.h5')
+    model.load_weights(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"))
 
     early_stop = tf.keras.callbacks.EarlyStopping(
         monitor='val_loss', patience=5, verbose=1, mode='auto') #Stop training when a monitored metric has stopped improving.
 
-    checkpoint_filepath = 'output_best_model.h5'
+    # checkpoint_filepath = 'output_best_model.h5'
+    checkpoint_filepath = os.path.join(paths.get_models_dir(),"output_best_model.h5")
     Model_check = tf.keras.callbacks.ModelCheckpoint(
         checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True,
         save_weights_only=False, mode='auto') #Callback to save the Keras model or model weights at some frequency.
@@ -281,7 +280,7 @@ def train(**args):
                     callbacks=[early_stop,Model_check])
 
     #RETRAIN
-    model_New = tf.keras.models.load_model('output_best_model.h5',custom_objects={'dice_coefficient': dice_coefficient})
+    model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"output_best_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
     model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient]) 
 
     eval_test=model_New.evaluate(X_test,Y_test)
@@ -333,7 +332,7 @@ def train(**args):
     jaccard = m.result().numpy()
 
     #TRUE MODEL
-    model_New = tf.keras.models.load_model('./best_model_FL_BCE_0_5_model.h5',custom_objects={'dice_coefficient': dice_coefficient})
+    model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
     model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient]) 
 
     eval_test=model_New.evaluate(X_test,Y_test)
@@ -391,7 +390,7 @@ def train(**args):
         output["retrain model"] = "worse"
     else:
         output["retrain model"] = "better"
-
+    print(output)
     return output
 
 

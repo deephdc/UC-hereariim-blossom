@@ -414,11 +414,11 @@ def get_predict_args():
             location="form",
             description="Image",  # needed to be parsed by UI
         ),
-        "accept": fields.Str(
-            description="Media type(s) that is/are acceptable for the response.",
-            missing='application/zip',
-            validate=validate.OneOf(['application/zip', 'image/png', 'application/json']),
-        ),
+        # "accept": fields.Str(
+        #     description="Media type(s) that is/are acceptable for the response.",
+        #     missing='application/zip',
+        #     validate=validate.OneOf(['application/zip', 'image/png', 'application/json']),
+        # ),
     }
     return arg_dict
 

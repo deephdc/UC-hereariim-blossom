@@ -13,7 +13,7 @@ pipeline {
         author_name = "Herearii Metuarea"
         author_email = "herearii.metuarea@gmail.com"
         app_name = "blossom"
-        job_location = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-blossom/${env.BRANCH_NAME}"
+        job_location = "Pipeline-as-code/DEEP-OC-org/UC-hereariim-DEEP-OC-blossom/${env.BRANCH_NAME}"
     }
 
     stages {

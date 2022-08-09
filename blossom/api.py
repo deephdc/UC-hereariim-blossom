@@ -105,6 +105,8 @@ def train(**args):
     backend.clear_session()
     path_image_data = cfg.DATA_IMAGE
     path_masks_data = cfg.DATA_MASK
+    print("path image data",path_image_data)
+    print("path mask data",path_masks_data)
 
     def fabriquer_train(path):
         dico = {}
@@ -271,7 +273,7 @@ def train(**args):
     model.summary()
 
 
-    model.load_weights(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"))
+    model.load_weights(os.path.join(paths.get_models_dir(),"weight_best_model_FL_BCE_0_5_model.h5"))
 
     early_stop = tf.keras.callbacks.EarlyStopping(
         monitor='val_loss', patience=5, verbose=1, mode='auto') #Stop training when a monitored metric has stopped improving.
@@ -286,6 +288,7 @@ def train(**args):
                     validation_data=(x_val,y_val),
                     epochs=50, batch_size = batch_size_user,
                     callbacks=[early_stop,Model_check])
+
 
     #RETRAIN
     model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"output_best_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
@@ -321,6 +324,16 @@ def train(**args):
     preds_test = model_New.predict(X_test, verbose=1)
     # we apply a threshold on predicted mask (probability mask) to convert it to a binary mask.
     preds_test_opt = (preds_test >op_thr).astype(np.uint8)
+    
+    #save weight
+    model_New.save("weight_output_best_model.h5")
+    #save op_thr in txt file
+    if os.path.exists(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt")):
+        os.remove(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt"))
+        
+    f = open(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt"),"a")
+    f.write(str(op_thr))
+    f.close()
 
     PIXEL_TEST = []
     PIXEL_PRED = []
@@ -350,26 +363,34 @@ def train(**args):
     
 
     # compute F1-score for a set of thresholds from (0.1 to 0.9 with a step of 0.1)
-    prob_thresh = [i*10**-1 for i in range(1,10)]
-    perf=[] # define an empty array to store the computed F1-score for each threshold
-    perf_ALL=[]
+    # prob_thresh = [i*10**-1 for i in range(1,10)]
+    # perf=[] # define an empty array to store the computed F1-score for each threshold
+    # perf_ALL=[]
     # for r in tqdm(prob_thresh): # all th thrshold values
-    for r in prob_thresh:
-        preds_bin = ((Mask_valid_pred_int> r) + 0 )
-        preds_bin1=preds_bin[:,:,:,0]
-        GTALL=y_val[:,:,:,0]
-        for ii in range(len(GTALL)): # all validation images
-            predmask=preds_bin1[ii,:,:]
-            GT=GTALL[ii,:,:]
-            l = GT.flatten()
-            p= predmask.flatten()
-            perf.append(f1_score(l, p)) # re invert the maps: cells: 1, back :0
-        perf_ALL.append(np.mean(perf))
-        perf=[]
+    # for r in prob_thresh:
+    #     preds_bin = ((Mask_valid_pred_int> r) + 0 )
+    #     preds_bin1=preds_bin[:,:,:,0]
+    #     GTALL=y_val[:,:,:,0]
+    #     for ii in range(len(GTALL)): # all validation images
+    #         predmask=preds_bin1[ii,:,:]
+    #         GT=GTALL[ii,:,:]
+    #         l = GT.flatten()
+    #         p= predmask.flatten()
+    #         perf.append(f1_score(l, p)) # re invert the maps: cells: 1, back :0
+    #     perf_ALL.append(np.mean(perf))
+    #     perf=[]
         
-    max_f1 = max(perf_ALL)  # Find the maximum y value
-    op_thr = prob_thresh[np.array(perf_ALL).argmax()]  # Find the x value corresponding to the maximum y value
+    # max_f1 = max(perf_ALL)  # Find the maximum y value
+    # op_thr = prob_thresh[np.array(perf_ALL).argmax()]  # Find the x value corresponding to the maximum y value
 
+
+    # get op_thr
+    f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
+    numer_opt_thr = f.read()
+    f.close()
+    
+    op_thr = float(numer_opt_thr)
+    
     preds_test = model_New.predict(X_test, verbose=1)
     # we apply a threshold on predicted mask (probability mask) to convert it to a binary mask.
     preds_test_opt = (preds_test >op_thr).astype(np.uint8)
@@ -452,7 +473,14 @@ def predict(**kwargs):
         x,y,z = size_
         model_new = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
         prediction = model_new.predict(image_reshaped)
-        preds_test_t = (prediction > 0.2)
+        
+        f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
+        numer_opt_thr = f.read()
+        f.close()
+            
+        op_thr = float(numer_opt_thr)
+        
+        preds_test_t = (prediction > op_thr) #op_thr = 0.2
         preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
         output_dir = tempfile.TemporaryDirectory()
         imsave(fname=os.path.join(output_dir.name,originalname), arr=np.squeeze(preds_test_t))
@@ -486,10 +514,17 @@ def predict(**kwargs):
         dico_prediction = {}
         output_dir = tempfile.TemporaryDirectory()
 
+        f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
+        numer_opt_thr = f.read()
+        f.close()
+                
+        op_thr = float(numer_opt_thr)
+        
+
         for ids in dico.keys():
             prediction = model_new.predict(dico_image_reshaped[ids])
-            x,y,z = dico_size_[ids]
-            preds_test_t = (prediction > 0.2)
+            x,y,z = dico_size_[ids] 
+            preds_test_t = (prediction > op_thr) #op_thr = 0.2
             preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
             dico_prediction[ids] = preds_test_t
             imsave(fname=os.path.join(output_dir.name,ids),arr=np.squeeze(preds_test_t))

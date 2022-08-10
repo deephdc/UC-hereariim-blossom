@@ -23,26 +23,26 @@ pipeline {
             }
         }
 
-        stage('Style analysis: PEP8') {
-            steps {
-                ToxEnvRun('pep8')
-            }
-            post {
-                always {
-                    // TODO: migrate to new "warnings-ng-plugin"
-                    // [!] "warnings" reached end-of-life
-                    warnings canComputeNew: false,
-                             canResolveRelativePaths: false,
-                             defaultEncoding: '',
-                             excludePattern: '',
-                             healthy: '',
-                             includePattern: '',
-                             messagesPattern: '',
-                             parserConfigurations: [[parserName: 'PYLint', pattern: '**/flake8.log']],
-                             unHealthy: ''
-                }
-            }
-        }
+//         stage('Style analysis: PEP8') {
+//             steps {
+//                 ToxEnvRun('pep8')
+//             }
+//             post {
+//                 always {
+//                     // TODO: migrate to new "warnings-ng-plugin"
+//                     // [!] "warnings" reached end-of-life
+//                     warnings canComputeNew: false,
+//                              canResolveRelativePaths: false,
+//                              defaultEncoding: '',
+//                              excludePattern: '',
+//                              healthy: '',
+//                              includePattern: '',
+//                              messagesPattern: '',
+//                              parserConfigurations: [[parserName: 'PYLint', pattern: '**/flake8.log']],
+//                              unHealthy: ''
+//                 }
+//             }
+//         }
 
         stage('Unit testing coverage') {
             steps {

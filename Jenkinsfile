@@ -44,49 +44,49 @@ pipeline {
 //             }
 //         }
 
-        stage('Unit testing coverage') {
-            steps {
-                ToxEnvRun('cover')
-                ToxEnvRun('cobertura')
-            }
-            post {
-                success {
-                    HTMLReport('cover', 'index.html', 'coverage.py report')
-                    CoberturaReport('**/coverage.xml')
-                }
-            }
-        }
-
-        stage('Metrics gathering') {
-            agent {
-                label 'sloc'
-            }
-            steps {
-                checkout scm
-                SLOCRun()
-            }
-            post {
-                success {
-                    SLOCPublish()
-                }
-            }
-        }
-
-        stage('Security scanner') {
-            steps {
-                ToxEnvRun('bandit-report')
-                script {
-                    if (currentBuild.result == 'FAILURE') {
-                        currentBuild.result = 'UNSTABLE'
-                    }
-               }
-            }
-            post {
-               always {
-                    HTMLReport("/tmp/bandit", 'index.html', 'Bandit report')
-                }
-            }
-        }
+//         stage('Unit testing coverage') {
+//             steps {
+//                 ToxEnvRun('cover')
+//                 ToxEnvRun('cobertura')
+//             }
+//             post {
+//                 success {
+//                     HTMLReport('cover', 'index.html', 'coverage.py report')
+//                     CoberturaReport('**/coverage.xml')
+//                 }
+//             }
+//         }
+//
+//         stage('Metrics gathering') {
+//             agent {
+//                 label 'sloc'
+//             }
+//             steps {
+//                 checkout scm
+//                 SLOCRun()
+//             }
+//             post {
+//                 success {
+//                     SLOCPublish()
+//                 }
+//             }
+//         }
+//
+//         stage('Security scanner') {
+//             steps {
+//                 ToxEnvRun('bandit-report')
+//                 script {
+//                     if (currentBuild.result == 'FAILURE') {
+//                         currentBuild.result = 'UNSTABLE'
+//                     }
+//                }
+//             }
+//             post {
+//                always {
+//                     HTMLReport("/tmp/bandit", 'index.html', 'Bandit report')
+//                 }
+//             }
+//         }
 
         stage("Re-build Docker images") {
             when {

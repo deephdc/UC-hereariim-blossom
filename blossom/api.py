@@ -68,9 +68,13 @@ def _catch_error(f):
 
 def get_metadata():
     metadata = {
-        "author":"xxx",
-        "description":"xxx",
-        "license":"MIT",
+        "name": None,
+        "version": None,
+        "summary": None,
+        "home-page": None,
+        "author": None,
+        "author-email": None,
+        "license": "MIT",
     }
     return metadata
 
@@ -110,7 +114,7 @@ def train(**args):
 
     def fabriquer_train(path):
         dico = {}
-        A = os.listdir(path)      
+        A = os.listdir(path)
         # for i in tqdm(range(len(A)),'train'):
         for i in range(len(A)):
             img = imread(os.path.join(path,A[i]))
@@ -131,11 +135,11 @@ def train(**args):
     print("test")
     masks_ = fabriquer_test(path_masks_data)
     print("Input done")
-    
+
     image_name = list(image_.keys())
     masks_name = list(masks_.keys())
 
-    
+
     X_train, X_test_, Y_train, Y_test_ = train_test_split(image_name, masks_name, test_size=0.2, random_state=42)
 
     x_train_, x_val_, y_train_, y_val_ = train_test_split(X_train, Y_train, test_size=0.2, random_state=42) #text_size=0.3 (à moi, 0.2)
@@ -160,7 +164,7 @@ def train(**args):
     def get_Y_data(ids):
         ids.sort()
         Y = np.zeros((len(ids), IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-        
+
         # for n, id_ in tqdm(enumerate(ids), total=len(ids)):
         for n, id_ in enumerate(ids):
             mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
@@ -190,7 +194,7 @@ def train(**args):
                 padding="same")(input_tensor) # padding="valid"
         x = Activation("relu")(x)
         # second layer
-        x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size), 
+        x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size),
                 padding="same")(x)
         x = Activation("relu")(x)
         return x
@@ -217,9 +221,9 @@ def train(**args):
 
         c4 = conv2d_block(p14, n_filters=n_filters*32, kernel_size=3)
         p4 = MaxPooling2D(pool_size=(2, 2)) (c4)
-        
-        c5 = conv2d_block(p4, n_filters=n_filters*64, kernel_size=3) # last layer on encoding path 
-        
+
+        c5 = conv2d_block(p4, n_filters=n_filters*64, kernel_size=3) # last layer on encoding path
+
         # expansive path # decoder
         u6 = Conv2DTranspose(n_filters*32, (3, 3), strides=(2, 2), padding='same') (c5) #upsampling included
         u6 = concatenate([u6, c4])
@@ -248,7 +252,7 @@ def train(**args):
         u9 = Conv2DTranspose(n_filters*4, (3, 3), strides=(2, 2), padding='same') (c8)
         u9 = concatenate([u9, c1], axis=3)
         c9 = conv2d_block(u9, n_filters=n_filters*4, kernel_size=3)
-        
+
         outputs = Conv2D(1, (1, 1), activation='sigmoid') (c9)
         model = tf.keras.models.Model(inputs=[input_img], outputs=[outputs])
         return model
@@ -258,7 +262,7 @@ def train(**args):
         y_true_f = keras.backend.flatten(y_true)
         y_pred_f = keras.backend.flatten(y_pred)
         intersection = keras.backend.sum(y_true_f * y_pred_f)
-        return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps) #eps pour éviter la division par 0 
+        return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps) #eps pour éviter la division par 0
 
     n_filters_user = yaml.safe_load(args["filtre"])
     learning_rate_user = yaml.safe_load(args["learning_rate"])
@@ -284,7 +288,7 @@ def train(**args):
         checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True,
         save_weights_only=False, mode='auto') #Callback to save the Keras model or model weights at some frequency.
 
-    results = model.fit(x_train,y_train, 
+    results = model.fit(x_train,y_train,
                     validation_data=(x_val,y_val),
                     epochs=50, batch_size = batch_size_user,
                     callbacks=[early_stop,Model_check])
@@ -292,7 +296,7 @@ def train(**args):
 
     #RETRAIN
     model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"output_best_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
-    model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient]) 
+    model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
 
     eval_test=model_New.evaluate(X_test,Y_test)
 
@@ -317,20 +321,20 @@ def train(**args):
             perf.append(f1_score(l, p)) # re invert the maps: cells: 1, back :0
         perf_ALL.append(np.mean(perf))
         perf=[]
-        
+
     max_f1 = max(perf_ALL)  # Find the maximum y value
     op_thr = prob_thresh[np.array(perf_ALL).argmax()]  # Find the x value corresponding to the maximum y value
 
     preds_test = model_New.predict(X_test, verbose=1)
     # we apply a threshold on predicted mask (probability mask) to convert it to a binary mask.
     preds_test_opt = (preds_test >op_thr).astype(np.uint8)
-    
+
     #save weight
     model_New.save("weight_output_best_model.h5")
     #save op_thr in txt file
     if os.path.exists(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt")):
         os.remove(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt"))
-        
+
     f = open(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt"),"a")
     f.write(str(op_thr))
     f.close()
@@ -344,7 +348,7 @@ def train(**args):
         for j in range(256):
             PIXEL_TEST.append(int(a[i][j]))
             PIXEL_PRED.append(int(b[i][j]))
-    
+
     Y_t = keras.backend.constant(PIXEL_TEST)
     pred_t = keras.backend.constant(PIXEL_PRED)
     dice_retrain = keras.backend.get_value(dice_coefficient(Y_t,pred_t))
@@ -354,13 +358,13 @@ def train(**args):
 
     #TRUE MODEL
     model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
-    model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient]) 
+    model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
 
     eval_test=model_New.evaluate(X_test,Y_test)
 
     Mask_valid_pred_int= model_New.predict(x_val, verbose=2)
 
-    
+
 
     # compute F1-score for a set of thresholds from (0.1 to 0.9 with a step of 0.1)
     # prob_thresh = [i*10**-1 for i in range(1,10)]
@@ -379,7 +383,7 @@ def train(**args):
     #         perf.append(f1_score(l, p)) # re invert the maps: cells: 1, back :0
     #     perf_ALL.append(np.mean(perf))
     #     perf=[]
-        
+
     # max_f1 = max(perf_ALL)  # Find the maximum y value
     # op_thr = prob_thresh[np.array(perf_ALL).argmax()]  # Find the x value corresponding to the maximum y value
 
@@ -388,9 +392,9 @@ def train(**args):
     f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
     numer_opt_thr = f.read()
     f.close()
-    
+
     op_thr = float(numer_opt_thr)
-    
+
     preds_test = model_New.predict(X_test, verbose=1)
     # we apply a threshold on predicted mask (probability mask) to convert it to a binary mask.
     preds_test_opt = (preds_test >op_thr).astype(np.uint8)
@@ -404,7 +408,7 @@ def train(**args):
         for j in range(256):
             PIXEL_TEST.append(int(a[i][j]))
             PIXEL_PRED.append(int(b[i][j]))
-        
+
     Y_t = keras.backend.constant(PIXEL_TEST)
     pred_t = keras.backend.constant(PIXEL_PRED)
     dice_exist = keras.backend.get_value(dice_coefficient(Y_t,pred_t))
@@ -466,20 +470,20 @@ def predict(**kwargs):
         y_pred_f = keras.backend.flatten(y_pred)
         intersection =keras.backend.sum(y_true_f*y_pred_f)
         return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps)
-    
+
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
 
         image_reshaped, size_ = redimension(filepath)
         x,y,z = size_
         model_new = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
         prediction = model_new.predict(image_reshaped)
-        
+
         f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
         numer_opt_thr = f.read()
         f.close()
-            
+
         op_thr = float(numer_opt_thr)
-        
+
         preds_test_t = (prediction > op_thr) #op_thr = 0.2
         preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
         output_dir = tempfile.TemporaryDirectory()
@@ -489,7 +493,7 @@ def predict(**kwargs):
         shutil.make_archive(output_dir.name,format="zip",root_dir=output_dir.name,)
         zip_path = output_dir.name + ".zip"
         return open(zip_path,"rb")
-    
+
     elif originalname[-3:] in ['zip','ZIP']:
         zip_dir = tempfile.TemporaryDirectory()
 
@@ -517,13 +521,13 @@ def predict(**kwargs):
         f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
         numer_opt_thr = f.read()
         f.close()
-                
+
         op_thr = float(numer_opt_thr)
-        
+
 
         for ids in dico.keys():
             prediction = model_new.predict(dico_image_reshaped[ids])
-            x,y,z = dico_size_[ids] 
+            x,y,z = dico_size_[ids]
             preds_test_t = (prediction > op_thr) #op_thr = 0.2
             preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
             dico_prediction[ids] = preds_test_t

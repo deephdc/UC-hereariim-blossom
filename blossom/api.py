@@ -457,6 +457,8 @@ def predict(**kwargs):
     filepath = kwargs["image"].filename
     originalname = kwargs["image"].original_filename
 
+    print(originalname)
+
     def redimension(image):
         X = np.zeros((1,256,256,3),dtype=np.uint8)
         img = imread(image)
@@ -496,7 +498,7 @@ def predict(**kwargs):
 
     elif originalname[-3:] in ['zip','ZIP']:
         zip_dir = tempfile.TemporaryDirectory()
-
+        print(">>>>>>>>>>>>",zip_dir)
         with ZipFile(filepath,'r') as zipObject:
             listOfFileNames = zipObject.namelist()
             for i in range(len(listOfFileNames)):
@@ -511,7 +513,7 @@ def predict(**kwargs):
         for ids in list(dico.keys()):
             image_reshaped, size_ = redimension(dico[ids])
             dico_image_reshaped[ids] = image_reshaped
-            dico_size_ [ids] = size_
+            dico_size_[ids] = size_
 
         model_new = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
 
@@ -520,6 +522,7 @@ def predict(**kwargs):
 
         f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
         numer_opt_thr = f.read()
+        print(">>>>>>>>>>>>",numer_opt_thr)
         f.close()
 
         op_thr = float(numer_opt_thr)

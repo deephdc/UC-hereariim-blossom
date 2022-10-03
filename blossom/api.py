@@ -3,6 +3,9 @@ import shutil
 import tempfile
 from marshmallow import missing
 import yaml
+from webargs import fields
+
+#127.0.0.1
 
 from zipfile import ZipFile
 from skimage.io import imread, imsave, imread_collection, concatenate_images
@@ -68,13 +71,19 @@ def _catch_error(f):
 
 def get_metadata():
     metadata = {
-        "name": None,
-        "version": None,
-        "summary": None,
-        "home-page": None,
-        "author": None,
-        "author-email": None,
-        "license": "MIT",
+        "name": fields.Str(required=True,
+                       description='Blossom'),
+        "version": fields.Str(required=False,
+                          description='Model version'),
+        "summary": fields.Str(required=False,
+                         description='This module gives you a model to segment blossoming apple tree'),
+        #"home-page": None,
+        "author": fields.Str(required=False,
+                         description='Herearii Metuarea'),
+        "author-email": "herearii.metuarea@gmail.com",
+        #"license": "MIT",
+        "license": fields.Str(required=False,
+                          description='MIT'),
     }
     return metadata
 
@@ -82,22 +91,22 @@ def get_train_args():
     arg_dict = {
         "learning_rate": fields.Str(
             required = False,
-            missing=0.0007,
+            missing="0.0007",
             description="learning rate",
         ),
         "filtre": fields.Str(
             required = False,
-            missing=3,
+            missing="3",
             description="filtre",
         ),
         "gamma": fields.Str(
             required = False,
-            missing=0.2,
+            missing="0.2",
             description="gamma",
         ),
         "batch_size": fields.Str(
             required = False,
-            missing=2,
+            missing="2",
             description="batch_size",
         ),
     }
@@ -439,11 +448,11 @@ def get_predict_args():
             location="form",
             description="Image",  # needed to be parsed by UI
         ),
-        # "accept": fields.Str(
-        #     description="Media type(s) that is/are acceptable for the response.",
-        #     missing='application/zip',
-        #     validate=validate.OneOf(['application/zip', 'image/png', 'application/json']),
-        # ),
+        "accept": fields.Str(
+            description="Media type(s) that is/are acceptable for the response.",
+            missing='application/zip',
+            validate=validate.OneOf(['application/zip', 'image/png', 'application/json']),
+        ),
     }
     return arg_dict
 

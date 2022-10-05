@@ -458,8 +458,8 @@ def train(**args):
 
     PIXEL_TEST = []
     PIXEL_PRED = []
-    for ix in range(len(X_test_)):
-        a = Y_test[ix, :, :, 0]
+    for ix in range(len(X_test_ensemble)):
+        a = y_test_ensemble[ix, :, :, 0]
         b = preds_test_opt[ix, :, :, 0]
     for i in range(256):
         for j in range(256):
@@ -477,7 +477,7 @@ def train(**args):
     model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
     model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
 
-    eval_test=model_New.evaluate(X_test,Y_test)
+    eval_test=model_New.evaluate(X_test_ensemble,y_test_ensemble)
 
     Mask_valid_pred_int= model_New.predict(x_val, verbose=2)
 
@@ -518,8 +518,8 @@ def train(**args):
 
     PIXEL_TEST = []
     PIXEL_PRED = []
-    for ix in range(len(X_test_)):
-        a = Y_test[ix, :, :, 0]
+    for ix in range(len(X_test_ensemble)):
+        a = y_test_ensemble[ix, :, :, 0]
         b = preds_test_opt[ix, :, :, 0]
     for i in range(256):
         for j in range(256):

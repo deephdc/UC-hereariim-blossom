@@ -148,7 +148,8 @@ def train(**args):
     images_set = list(image_.keys())
     masks_set = list(masks_.keys())
 
-    
+    print("Train :",len(images_set),len(masks_set))
+
     train_list = []
     masks_list = []
 
@@ -156,8 +157,8 @@ def train(**args):
     cp=0
     CP = []
     for x,y in zip(images_set,masks_set):
-        sample_image_train = imread(cfg.DATA_IMAGE+x)[:,:,:3]
-        sample_maque_train = imread(cfg.DATA_MASK+y)[:,:,:3]
+        sample_image_train = imread(cfg.DATA_IMAGE+'\\'+x)[:,:,:3]
+        sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]
         if sample_image_train.shape[0]==sample_maque_train.shape[0] and sample_image_train.shape[1]==sample_maque_train.shape[1]:
             train_list.append(x)
             masks_list.append(y)
@@ -212,14 +213,25 @@ def train(**args):
     X_train_list = []
     y_train_list = []
 
-    TRAIN_PATH = cfg.DATA_IMAGE
-    TEST_PATH = cfg.DATA_MASK
+    X_train_image = [cfg.DATA_IMAGE+'\\'+files for files in X_train] #X_train <- images
 
-    for files_image,files_mask in zip(X_train,y_train):
-        img1 = imread(TRAIN_PATH+'images/'+files_image)[:,:,:3]
-        img2 = imread(TRAIN_PATH+'masks/'+files_mask)[:,:,:3]
+    Y_train_masks = [cfg.DATA_MASK+'\\'+files for files in y_train] #Y_train <- masks
+
+    X_test_images = [cfg.DATA_IMAGE+'\\'+files for files in X_test] #X_test <- images
+
+    y_test_masks = [cfg.DATA_MASK+'\\'+files for files in y_test] #Y_test <- masks
+
+    for files_image,files_mask in zip(X_train_image,Y_train_masks):
+        print(files_image,files_mask)
+        print("step 1")
+        print(files_image)
+        print(files_mask)
+        img1 = imread(files_image)[:,:,:3]
+        img2 = imread(files_mask)[:,:,:3]
+        print("step 2")
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)
+        print("done")
 
         #on écarte les images avec un seul label
         for x,y in zip(img1_list,img2_list):
@@ -249,9 +261,9 @@ def train(**args):
     X_test_list = []
     y_test_list = []
 
-    for files_image,files_mask in zip(X_test,y_test):
-        img1 = imread(TEST_PATH+'images/'+files_image)[:,:,:3]
-        img2 = imread(TEST_PATH+'masks/'+files_mask)[:,:,:3]
+    for files_image,files_mask in zip(X_test_images,y_test_masks):
+        img1 = imread(files_image)[:,:,:3]
+        img2 = imread(files_mask)[:,:,:3]
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)
 
@@ -274,6 +286,21 @@ def train(**args):
     print("Total image test pour test step :")
     print("x_test :",len(X_test_list))
     print("y_test :",len(y_test_list))
+
+    taille_p = 256
+    X_train_ensemble = np.zeros((len(X_train_list), taille_p, taille_p, 3), dtype=np.uint8)
+    y_train_ensemble = np.zeros((len(y_train_list), taille_p, taille_p, 1), dtype=np.bool)
+
+    for n,m in zip(range(len(X_train_list)),range(len(y_train_list))):
+        X_train_ensemble[n]=X_train_list[n]
+        y_train_ensemble[m]=y_train_list[m]
+
+    X_test_ensemble = np.zeros((len(X_test_list), taille_p, taille_p, 3), dtype=np.uint8)
+    y_test_ensemble = np.zeros((len(y_test_list), taille_p, taille_p, 1), dtype=np.bool)
+
+    for n,m in zip(range(len(X_test_list)),range(len(y_test_list))):
+        X_test_ensemble[n]=X_test_list[n]
+        y_test_ensemble[m]=y_test_list[m]
 
     def conv2d_block(input_tensor, n_filters, kernel_size=3):
         # first layer
@@ -351,6 +378,8 @@ def train(**args):
         intersection = keras.backend.sum(y_true_f * y_pred_f)
         return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps) #eps pour éviter la division par 0
 
+    x_train, x_val, y_train, y_val = train_test_split(X_train_ensemble, y_train_ensemble, test_size=0.2, random_state=42) 
+
     n_filters_user = yaml.safe_load(args["filtre"])
     learning_rate_user = yaml.safe_load(args["learning_rate"])
     gamma_user = yaml.safe_load(args["gamma"])
@@ -386,7 +415,7 @@ def train(**args):
     model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"output_best_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
     model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
 
-    eval_test=model_New.evaluate(X_test,Y_test)
+    eval_test=model_New.evaluate(X_test_ensemble,y_test_ensemble)
 
     Mask_valid_pred_int= model_New.predict(x_val, verbose=2)
 

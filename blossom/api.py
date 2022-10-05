@@ -145,57 +145,135 @@ def train(**args):
     masks_ = fabriquer_test(path_masks_data)
     print("Input done")
 
-    image_name = list(image_.keys())
-    masks_name = list(masks_.keys())
+    images_set = list(image_.keys())
+    masks_set = list(masks_.keys())
+
+    
+    train_list = []
+    masks_list = []
+
+    ct=0
+    cp=0
+    CP = []
+    for x,y in zip(images_set,masks_set):
+        sample_image_train = imread(cfg.DATA_IMAGE+x)[:,:,:3]
+        sample_maque_train = imread(cfg.DATA_MASK+y)[:,:,:3]
+        if sample_image_train.shape[0]==sample_maque_train.shape[0] and sample_image_train.shape[1]==sample_maque_train.shape[1]:
+            train_list.append(x)
+            masks_list.append(y)
+            ct+=1
+        else:
+            cp+=1
+            CP.append([x,y])
+    print("Image et masque de même taille",ct)
+    print("Image et masque de taille différente",cp)
 
 
-    X_train, X_test_, Y_train, Y_test_ = train_test_split(image_name, masks_name, test_size=0.2, random_state=42)
-
-    x_train_, x_val_, y_train_, y_val_ = train_test_split(X_train, Y_train, test_size=0.2, random_state=42) #text_size=0.3 (à moi, 0.2)
+    X_train, X_test, y_train, y_test = train_test_split(train_list, masks_list, test_size=0.2, random_state=42)
 
     # Set some parameters
     IMG_WIDTH = 256
     IMG_HEIGHT = 256
     IMG_CHANNELS = 3
 
-    def get_X_data(ids):
-        ids.sort()
-        X = np.zeros((len(ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
-        # for n, id_ in tqdm(enumerate(ids), total=len(ids)):
-        for n, id_ in enumerate(ids):
-            # we'll be using skimage library for reading file
-            print(len(image_))
-            img = image_[id_][:,:,:IMG_CHANNELS]
-            img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-            X[n] = img
-        return X
+    def get_mosaic(img,train=True):
+        A = []
+        if train:
+            h,l,z = img.shape
+        else:
+            h,l = img.shape
+        #longueur
+        L1 = [ i for i in range(0,l-255,255)]+[l-255]
+        L2 = [ 256+i for i in range(0,l,255) if 256+i < l]+[l]
 
-    def get_Y_data(ids):
-        ids.sort()
-        Y = np.zeros((len(ids), IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+        #hauteur
+        R1 = [ i for i in range(0,h-255,255)]+[h-255]
+        R2 = [ 256+i for i in range(0,h,255) if 256+i < h]+[h]
 
-        # for n, id_ in tqdm(enumerate(ids), total=len(ids)):
-        for n, id_ in enumerate(ids):
-            mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-            print(len(masks_))
-            masque_ = masks_[id_]
-            gray_file = rgb2gray(masque_)
-            threshold = threshold_otsu(gray_file)
-            binary_file = (gray_file > threshold)
-            masque_ = np.expand_dims(resize(binary_file, (IMG_HEIGHT, IMG_WIDTH), mode='constant',preserve_range=True), axis=-1)
-            Y[n] = masque_
-        return Y
+        for h1,h2 in zip(R1,R2):
+            for l1,l2 in zip(L1,L2):
+                if train:
+                    A.append(img[h1:h2,l1:l2])
+                else:
+                    temp1=img[h1:h2,l1:l2]
+                    mask = np.zeros((256, 256, 1), dtype=np.bool)
+                    for x in range(255):
+                        for y in range(255):
+                            mask[x,y,0]=temp1[x,y]
+                    A.append(mask)
+        return A
 
     print('Getting and resizing train images ... ')
 
-    x_train = get_X_data(x_train_)
-    y_train = get_Y_data(y_train_)
+    #TRAIN
+    print("Nombre image",len(X_train))
+    print("Nombre masque",len(y_train))
 
-    x_val = get_X_data(x_val_)
-    y_val = get_Y_data(y_val_)
+    X_train_list = []
+    y_train_list = []
 
-    X_test = get_X_data(X_test_)
-    Y_test = get_Y_data(Y_test_)
+    TRAIN_PATH = cfg.DATA_IMAGE
+    TEST_PATH = cfg.DATA_MASK
+
+    for files_image,files_mask in zip(X_train,y_train):
+        img1 = imread(TRAIN_PATH+'images/'+files_image)[:,:,:3]
+        img2 = imread(TRAIN_PATH+'masks/'+files_mask)[:,:,:3]
+        img1_list = get_mosaic(img1)
+        img2_list = get_mosaic(img2)
+
+        #on écarte les images avec un seul label
+        for x,y in zip(img1_list,img2_list):
+            sz1_x,sz2_x,sz3_x = x.shape
+            sz1_y,sz2_y,sz3_y = y.shape
+
+            #masque
+            gray_file = rgb2gray(y)
+            threshold = threshold_otsu(gray_file)
+            binary_file = (gray_file > threshold)
+            mask_ = np.expand_dims(binary_file, axis=-1)
+
+            L = dict(Counter(list(mask_.flatten())))
+            if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
+                X_train_list.append(x)
+                y_train_list.append(mask_)
+
+    print("Total image train pour training step :")
+    print("x_train :",len(X_train_list))
+    print("y_train :",len(y_train_list))
+
+    #TEST
+
+    print("Nombre image",len(X_test))
+    print("Nombre masque",len(y_test))
+
+    X_test_list = []
+    y_test_list = []
+
+    for files_image,files_mask in zip(X_test,y_test):
+        img1 = imread(TEST_PATH+'images/'+files_image)[:,:,:3]
+        img2 = imread(TEST_PATH+'masks/'+files_mask)[:,:,:3]
+        img1_list = get_mosaic(img1)
+        img2_list = get_mosaic(img2)
+
+        #on écarte les images avec un seul label
+        for x,y in zip(img1_list,img2_list):
+            sz1_x,sz2_x,sz3_x = x.shape
+            sz1_y,sz2_y,sz3_y = y.shape
+
+            #masque
+            gray_file = rgb2gray(y)
+            threshold = threshold_otsu(gray_file)
+            binary_file = (gray_file > threshold)
+            mask_ = np.expand_dims(binary_file, axis=-1)
+
+            L = dict(Counter(list(mask_.flatten())))
+            if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
+                X_test_list.append(x)
+                y_test_list.append(mask_)
+
+    print("Total image test pour test step :")
+    print("x_test :",len(X_test_list))
+    print("y_test :",len(y_test_list))
 
     def conv2d_block(input_tensor, n_filters, kernel_size=3):
         # first layer
@@ -296,7 +374,7 @@ def train(**args):
     Model_check = tf.keras.callbacks.ModelCheckpoint(
         checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True,
         save_weights_only=False, mode='auto') #Callback to save the Keras model or model weights at some frequency.
-
+    print("training steps")
     results = model.fit(x_train,y_train,
                     validation_data=(x_val,y_val),
                     epochs=50, batch_size = batch_size_user,
@@ -304,6 +382,7 @@ def train(**args):
 
 
     #RETRAIN
+    print("best model analysis...")
     model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"output_best_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
     model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
 

@@ -12,7 +12,6 @@ from skimage.io import imread, imsave, imread_collection, concatenate_images
 
 from tensorflow import keras
 from focal_loss import BinaryFocalLoss
-from tensorflow import keras
 
 # from tensorflow.keras import backend as K
 import numpy as np

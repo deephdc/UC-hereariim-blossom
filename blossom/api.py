@@ -439,22 +439,25 @@ def train(**args):
     Mask_valid_pred_int= model_New.predict(x_val, verbose=2)
 
     from sklearn.metrics import f1_score
-
+    print("f1_score research...")
     # compute F1-score for a set of thresholds from (0.1 to 0.9 with a step of 0.1)
     prob_thresh = [i*10**-1 for i in range(1,10)]
     perf=[] # define an empty array to store the computed F1-score for each threshold
     perf_ALL=[]
     # for r in tqdm(prob_thresh): # all th thrshold values
     for r in prob_thresh:
+        print("step 1 loop")
         preds_bin = ((Mask_valid_pred_int> r) + 0 )
         preds_bin1=preds_bin[:,:,:,0]
         GTALL=y_val[:,:,:,0]
         for ii in range(len(GTALL)): # all validation images
+            print("step 2 loop")
             predmask=preds_bin1[ii,:,:]
             GT=GTALL[ii,:,:]
             l = GT.flatten()
             p= predmask.flatten()
             perf.append(f1_score(l, p)) # re invert the maps: cells: 1, back :0
+        print("step 1 end loop")
         perf_ALL.append(np.mean(perf))
         perf=[]
 

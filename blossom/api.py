@@ -12,7 +12,6 @@ from skimage.io import imread, imsave, imread_collection, concatenate_images
 
 from tensorflow import keras
 from focal_loss import BinaryFocalLoss
-from tensorflow import keras
 
 # from tensorflow.keras import backend as K
 import numpy as np
@@ -59,6 +58,24 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.model_selection import train_test_split
 from skimage.filters import threshold_otsu
+
+
+import tensorflow as tf
+import os
+
+import tensorflow as tf
+
+#This code helps if you are using GPU, else you can comment it.
+
+#os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"  
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+#config = tf.compat.v1.ConfigProto()
+#config.gpu_options.allow_growth=True
+#sess = tf.compat.v1.Session(config=config)
 
 def _catch_error(f):
     @wraps(f)
@@ -412,6 +429,7 @@ def train(**args):
 
     #RETRAIN
     print("best model analysis...")
+    print("best model loading : output_best_model.h5")
     model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"output_best_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
     model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
 
@@ -420,41 +438,48 @@ def train(**args):
     Mask_valid_pred_int= model_New.predict(x_val, verbose=2)
 
     from sklearn.metrics import f1_score
-
+    print("f1_score research...")
     # compute F1-score for a set of thresholds from (0.1 to 0.9 with a step of 0.1)
     prob_thresh = [i*10**-1 for i in range(1,10)]
     perf=[] # define an empty array to store the computed F1-score for each threshold
     perf_ALL=[]
     # for r in tqdm(prob_thresh): # all th thrshold values
     for r in prob_thresh:
+        print("step 1 loop")
         preds_bin = ((Mask_valid_pred_int> r) + 0 )
         preds_bin1=preds_bin[:,:,:,0]
         GTALL=y_val[:,:,:,0]
         for ii in range(len(GTALL)): # all validation images
+            print("step 2 loop")
             predmask=preds_bin1[ii,:,:]
             GT=GTALL[ii,:,:]
             l = GT.flatten()
             p= predmask.flatten()
             perf.append(f1_score(l, p)) # re invert the maps: cells: 1, back :0
+        print("step 1 end loop")
         perf_ALL.append(np.mean(perf))
         perf=[]
 
     max_f1 = max(perf_ALL)  # Find the maximum y value
     op_thr = prob_thresh[np.array(perf_ALL).argmax()]  # Find the x value corresponding to the maximum y value
-
+    print (' Best threshold is:',op_thr, 'for F1-score=',max_f1)
+    
     preds_test = model_New.predict(X_test, verbose=1)
     # we apply a threshold on predicted mask (probability mask) to convert it to a binary mask.
     preds_test_opt = (preds_test >op_thr).astype(np.uint8)
 
     #save weight
+    print("Weight model save : weight_output_best_model.h5")
     model_New.save("weight_output_best_model.h5")
     #save op_thr in txt file
     if os.path.exists(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt")):
+        print("output_optimal_threshold.txt already exist... delete")
         os.remove(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt"))
 
     f = open(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt"),"a")
     f.write(str(op_thr))
     f.close()
+    print("output_optimal_threshold.txt newly created")
 
     PIXEL_TEST = []
     PIXEL_PRED = []
@@ -472,6 +497,7 @@ def train(**args):
     m = tf.keras.metrics.MeanIoU(num_classes=2)
     m.update_state(Y_t,pred_t)
     jaccard = m.result().numpy()
+    print("DICE RETRAIN :",dice_retrain)
 
     #TRUE MODEL
     model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})

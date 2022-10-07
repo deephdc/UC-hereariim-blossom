@@ -17,6 +17,5 @@ tensorflow
 focal_loss
 scikit-image
 sklearn
-
 h5py
 imshowpair

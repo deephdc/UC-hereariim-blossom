@@ -464,7 +464,8 @@ def train(**args):
     op_thr = prob_thresh[np.array(perf_ALL).argmax()]  # Find the x value corresponding to the maximum y value
     print (' Best threshold is:',op_thr, 'for F1-score=',max_f1)
     
-    preds_test = model_New.predict(X_test, verbose=1)
+    #last blocked <=====
+    preds_test = model_New.predict(X_test_ensemble, verbose=1)
     # we apply a threshold on predicted mask (probability mask) to convert it to a binary mask.
     preds_test_opt = (preds_test >op_thr).astype(np.uint8)
 
@@ -507,8 +508,6 @@ def train(**args):
 
     Mask_valid_pred_int= model_New.predict(x_val, verbose=2)
 
-
-
     # compute F1-score for a set of thresholds from (0.1 to 0.9 with a step of 0.1)
     # prob_thresh = [i*10**-1 for i in range(1,10)]
     # perf=[] # define an empty array to store the computed F1-score for each threshold
@@ -538,7 +537,7 @@ def train(**args):
 
     op_thr = float(numer_opt_thr)
 
-    preds_test = model_New.predict(X_test, verbose=1)
+    preds_test = model_New.predict(X_test_ensemble, verbose=1)
     # we apply a threshold on predicted mask (probability mask) to convert it to a binary mask.
     preds_test_opt = (preds_test >op_thr).astype(np.uint8)
 
@@ -558,6 +557,7 @@ def train(**args):
     m = tf.keras.metrics.MeanIoU(num_classes=2)
     m.update_state(Y_t,pred_t)
     jaccard = m.result().numpy()
+    print("DICE EXISTED MODEL :",dice_exist)
 
 
     output["dice value (retrain model)"] = dice_retrain

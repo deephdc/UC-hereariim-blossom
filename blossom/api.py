@@ -116,11 +116,6 @@ def get_train_args():
             missing="3",
             description="filtre",
         ),
-        "gamma": fields.Str(
-            required = False,
-            missing="0.2",
-            description="gamma",
-        ),
         "batch_size": fields.Str(
             required = False,
             missing="2",
@@ -393,20 +388,42 @@ def train(**args):
         y_true_f = keras.backend.flatten(y_true)
         y_pred_f = keras.backend.flatten(y_pred)
         intersection = keras.backend.sum(y_true_f * y_pred_f)
-        return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps) #eps pour éviter la division par 0
+        return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps) # eps pour éviter la division par 0
 
     x_train, x_val, y_train, y_val = train_test_split(X_train_ensemble, y_train_ensemble, test_size=0.2, random_state=42) 
 
     n_filters_user = yaml.safe_load(args["filtre"])
     learning_rate_user = yaml.safe_load(args["learning_rate"])
-    gamma_user = yaml.safe_load(args["gamma"])
+    # gamma_user = yaml.safe_load(args["gamma"])
     batch_size_user = yaml.safe_load(args["batch_size"])
 
     input_img = Input((256,256, 3), name='img')
-    model = get_unet(input_img, n_filters=n_filters_user, kernel_size=3) #nombre de filtre
+    model = get_unet(input_img, n_filters=n_filters_user, kernel_size=3) # nombre de filtre
 
+    PIXEL = []
+    for sample_y in y_train_ensemble: # image dans Y_train (masque de segmentation dans la phase d'entrainement)
+        x = np.squeeze(sample_y)
+    for i in range(255):
+        for j in range(255):
+            PIXEL.append(x[i][j])
+
+    temp_dico = dict(Counter(PIXEL))
+
+    V = temp_dico.values()
+    s = sum(V)
+    dico = {}
+    for x in temp_dico:
+        dico[x]=1-temp_dico[x]/s #<- vrai
+    # dico[x]=temp_dico[x]/s #<- vrai
+    # print('PIXEL :',temp_dico.values())
+    # print('PIXEL normalized :',dico.values())
+    temp_list = list(dico.values())
+    # print(temp_list,'/ somme :',sum(temp_list))
+    
+    gam_p = 0.9
     opt = tf.keras.optimizers.Adam(learning_rate=learning_rate_user)
-    model.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient]) #focal loss
+    model.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list) #weighted loss
+    # model.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient]) #focal loss
     model.summary()
 
 
@@ -427,11 +444,12 @@ def train(**args):
                     callbacks=[early_stop,Model_check])
 
 
-    #RETRAIN
+    # RETRAIN
     print("best model analysis...")
     print("best model loading : output_best_model.h5")
     model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"output_best_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
-    model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
+    model_New.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list)
+    # model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
 
     eval_test=model_New.evaluate(X_test_ensemble,y_test_ensemble)
 
@@ -471,7 +489,8 @@ def train(**args):
 
     #save weight
     print("Weight model save : weight_output_best_model.h5")
-    model_New.save("weight_output_best_model.h5")
+    model_New.save(os.path.join(paths.get_models_dir(),"output_weight_best_model.h5"))
+    
     #save op_thr in txt file
     if os.path.exists(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt")):
         print("output_optimal_threshold.txt already exist... delete")
@@ -500,9 +519,10 @@ def train(**args):
     jaccard = m.result().numpy()
     print("DICE RETRAIN :",dice_retrain)
 
-    #TRUE MODEL
-    model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
-    model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
+    # TRUE MODEL
+    model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_W_BCE_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
+    model_New.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list)
+    # model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
 
     eval_test=model_New.evaluate(X_test_ensemble,y_test_ensemble)
 
@@ -569,6 +589,46 @@ def train(**args):
     print(output)
     return output
 
+def get_mosaic_predict(img):
+  A = []
+  h,l,z = img.shape
+  #longueur
+  L1 = [ i for i in range(0,l-255,255)]+[l-255]
+  L2 = [ 256+i for i in range(0,l,255) if 256+i < l]+[l]
+
+  #hauteur
+  R1 = [ i for i in range(0,h-255,255)]+[h-255]
+  R2 = [ 256+i for i in range(0,h,255) if 256+i < h]+[h]
+
+  for h1,h2 in zip(R1,R2):
+    for l1,l2 in zip(L1,L2):
+      A.append(img[h1:h2,l1:l2])
+  return A
+
+def reconstruire(img1,K_n):
+    ex,ey,ez=img1.shape
+    A = np.zeros((ex,ey,1), dtype=np.bool)
+    h=ex
+    l=ey
+    z=1
+    
+    #longueur
+    L1 = [ i for i in range(0,l-255,255)]+[l-255]
+    L2 = [ 256+i for i in range(0,l,255) if 256+i < l]+[l]
+
+    #hauteur
+    R1 = [ i for i in range(0,h-255,255)]+[h-255]
+    R2 = [ 256+i for i in range(0,h,255) if 256+i < h]+[h]
+  
+    n = 0
+    for h1,h2 in zip(R1,R2):
+        for l1,l2 in zip(L1,L2):
+            if A[h1:h2,l1:l2].shape == K_n[n].shape:
+                A[h1:h2,l1:l2] = K_n[n]
+            else:
+                A[h1:h2,l1:l2] = np.zeros(A[h1:h2,l1:l2].shape, dtype=np.bool)
+        n+=1
+    return A
 
 def get_predict_args():
     """
@@ -602,11 +662,12 @@ def predict(**kwargs):
 
     print(originalname)
 
-    def redimension(image):
+    def dimension_format(image):
         X = np.zeros((1,256,256,3),dtype=np.uint8)
         img = imread(image)
         size_ = img.shape
-        X[0] = resize(img, (256,256), mode="constant", preserve_range=True)
+        X[0] = img
+        # X[0] = resize(img, (256,256), mode="constant", preserve_range=True)
         return X,size_
 
     def dice_coefficient(y_true,y_pred):
@@ -618,21 +679,34 @@ def predict(**kwargs):
 
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
 
-        image_reshaped, size_ = redimension(filepath)
+        image_reshaped, size_ = dimension_format(filepath)
         x,y,z = size_
-        model_new = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
-        prediction = model_new.predict(image_reshaped)
+        img1_list = get_mosaic_predict(image_reshaped)
+        
+        
+        model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),'best_model_W_BCE_model.h5'),custom_objects={'dice_coefficient': dice_coefficient})
+        prediction = model_New.predict(image_reshaped)
+        
+        taille_p = 256
+        X_ensemble = np.zeros((len(img1_list), taille_p, taille_p, 3), dtype=np.uint8)
+        for n in range(len(img1_list)):
+            sz1_x,sz2_x,sz3_x = img1_list[n].shape
+            if (sz1_x,sz2_x)==(256,256):
+                X_ensemble[n]=img1_list[n]
 
         f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
         numer_opt_thr = f.read()
         f.close()
-
         op_thr = float(numer_opt_thr)
 
-        preds_test_t = (prediction > op_thr) #op_thr = 0.2
-        preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
+        preds_test = model_New.predict(X_ensemble, verbose=1)
+        preds_test_opt = (preds_test > op_thr).astype(np.uint8)
+        output_image = reconstruire(image_reshaped,preds_test_opt)
+        # preds_test_t = (prediction > op_thr) #op_thr = 0.2
+        # preds_test_t = resize(np.squeeze(output_image[:,:,0]),(x,y),mode="constant",preserve_range=True)
+        
         output_dir = tempfile.TemporaryDirectory()
-        imsave(fname=os.path.join(output_dir.name,originalname), arr=np.squeeze(preds_test_t))
+        imsave(fname=os.path.join(output_dir.name,originalname), arr=np.squeeze(output_image[:,:,0]))
 
         # return open(os.path.join(output_dir.name,originalname),'rb')
         shutil.make_archive(output_dir.name,format="zip",root_dir=output_dir.name,)
@@ -654,11 +728,12 @@ def predict(**kwargs):
         dico_image_reshaped = {}
         dico_size_ = {}
         for ids in list(dico.keys()):
-            image_reshaped, size_ = redimension(dico[ids])
-            dico_image_reshaped[ids] = image_reshaped
+            image_reshaped, size_ = dimension_format(dico[ids])
+            img1_list = get_mosaic_predict(image_reshaped)
+            dico_image_reshaped[ids] = img1_list
             dico_size_[ids] = size_
 
-        model_new = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_FL_BCE_0_5_model.h5"),custom_objects={"dice_coefficient" : dice_coefficient})
+        model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),'best_model_W_BCE_model.h5'),custom_objects={'dice_coefficient': dice_coefficient})
 
         dico_prediction = {}
         output_dir = tempfile.TemporaryDirectory()
@@ -672,12 +747,16 @@ def predict(**kwargs):
 
 
         for ids in dico.keys():
-            prediction = model_new.predict(dico_image_reshaped[ids])
-            x,y,z = dico_size_[ids]
-            preds_test_t = (prediction > op_thr) #op_thr = 0.2
-            preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
-            dico_prediction[ids] = preds_test_t
-            imsave(fname=os.path.join(output_dir.name,ids),arr=np.squeeze(preds_test_t))
+            preds_test = model_New.predict(dico_image_reshaped[ids], verbose=1)
+            preds_test_opt = (preds_test > op_thr).astype(np.uint8)
+            output_image = reconstruire(image_reshaped,preds_test_opt)
+            
+            
+            # preds_test_t = (prediction > op_thr) #op_thr = 0.2
+            # preds_test_t = resize(preds_test_t[0,:,:,0],(x,y),mode="constant",preserve_range=True)
+            dico_prediction[ids] = np.squeeze(output_image[:,:,0])
+            # imsave(fname=os.path.join(output_dir.name,ids),arr=np.squeeze(preds_test_t))
+            imsave(fname=os.path.join(output_dir.name,ids), arr=np.squeeze(output_image[:,:,0]))
 
         print(output_dir.name)
         shutil.make_archive(output_dir.name,format="zip",root_dir=output_dir.name,)

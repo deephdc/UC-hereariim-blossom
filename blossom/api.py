@@ -427,7 +427,7 @@ def train(**args):
     model.summary()
 
 
-    model.load_weights(os.path.join(paths.get_models_dir(),"weight_best_model_FL_BCE_0_5_model.h5"))
+    model.load_weights(os.path.join(paths.get_models_dir(),"weight_best_model_W_BCE_model.h5"))
 
     early_stop = tf.keras.callbacks.EarlyStopping(
         monitor='val_loss', patience=5, verbose=1, mode='auto') #Stop training when a monitored metric has stopped improving.
@@ -488,7 +488,7 @@ def train(**args):
     preds_test_opt = (preds_test >op_thr).astype(np.uint8)
 
     #save weight
-    print("Weight model save : weight_output_best_model.h5")
+    print("Weight model save : output_weight_best_model.h5")
     model_New.save(os.path.join(paths.get_models_dir(),"output_weight_best_model.h5"))
     
     #save op_thr in txt file

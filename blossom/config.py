@@ -23,10 +23,10 @@ if 'APP_INPUT_OUTPUT_BASE_DIR' in os.environ:
         "Using \"BASE_DIR={}\" instead.".format(BASE_DIR)
         print(msg)
 
-DATA_DIR = os.path.join(IN_OUT_BASE_DIR, 'blossom\dataset')
+DATA_DIR = os.path.join(IN_OUT_BASE_DIR, 'blossom'+'\\'+'dataset')
 MODELS_DIR = os.path.join(IN_OUT_BASE_DIR, 'models')
-DATA_IMAGE = os.path.join(DATA_DIR,'train\images')
-DATA_MASK = os.path.join(DATA_DIR,'train\masks')
+DATA_IMAGE = os.path.join(DATA_DIR,'train'+'\\'+'images')
+DATA_MASK = os.path.join(DATA_DIR,'train'+'\\'+'masks')
 
 
 # Input parameters for predict() (deepaas>=1.0.0)

@@ -671,6 +671,8 @@ def predict(**kwargs):
             dico[x] = os.path.join(zip_dir.name,x)
         print(">>> 2")
         # Load model
+        print(">>>> ==")
+        print(os.path.join(paths.get_models_dir(),'best_model_W_BCE_model.h5'))
         model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),'best_model_W_BCE_model.h5'),custom_objects={'dice_coefficient': dice_coefficient})
         print(">>> 3")
         dico_prediction = {}

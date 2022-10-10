@@ -659,18 +659,20 @@ def predict(**kwargs):
     elif originalname[-3:] in ['zip','ZIP']:
         zip_dir = tempfile.TemporaryDirectory()
         print(">>>>>>>>>>>>",zip_dir)
+        print(">>> 0")
         with ZipFile(filepath,'r') as zipObject:
             listOfFileNames = zipObject.namelist()
             for i in range(len(listOfFileNames)):
+                print(">>> x")
                 zipObject.extract(listOfFileNames[i],path=zip_dir.name)
-
+        print(">>> 1")
         dico = {}
         for x in os.listdir(zip_dir.name):
             dico[x] = os.path.join(zip_dir.name,x)
-        
+        print(">>> 2")
         # Load model
         model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),'best_model_W_BCE_model.h5'),custom_objects={'dice_coefficient': dice_coefficient})
-
+        print(">>> 3")
         dico_prediction = {}
         output_dir = tempfile.TemporaryDirectory()
 

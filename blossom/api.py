@@ -632,17 +632,17 @@ def get_predict_args():
     """
     arg_dict = {
         "image": fields.Field(
-            required=True,
+            required=False,
             type="file",
             missing="None",
             location="form",
             description="Image",  # needed to be parsed by UI
         ),
-        "URL model": fields.Str(
-            required=True,
-            missing="None",
-            description="Write url of models_image.zip in google drive",  # needed to be parsed by UI
-        ),
+        # "URL model": fields.Str(
+        #     required=False,
+        #     missing="None",
+        #     description="Write url of models_image.zip in google drive",  # needed to be parsed by UI
+        # ),
         "accept": fields.Str(
             description="Media type(s) that is/are acceptable for the response.",
             missing='application/zip',

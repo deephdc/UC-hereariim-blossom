@@ -638,11 +638,11 @@ def get_predict_args():
             location="form",
             description="Image",  # needed to be parsed by UI
         ),
-        # "URL model": fields.Str(
-        #     required=False,
-        #     missing="None",
-        #     description="Write url of models_image.zip in google drive",  # needed to be parsed by UI
-        # ),
+        "URL_model": fields.Str(
+            required=False,
+            missing="None",
+            description="Write url of models_image.zip located into google drive",  # needed to be parsed by UI
+        ),
         "accept": fields.Str(
             description="Media type(s) that is/are acceptable for the response.",
             missing='application/zip',
@@ -657,7 +657,7 @@ def predict(**kwargs):
     """
     OUTPUT
     """
-
+    print(kwargs)
     filepath = kwargs["image"].filename
     originalname = kwargs["image"].original_filename
 
@@ -670,7 +670,8 @@ def predict(**kwargs):
         intersection =keras.backend.sum(y_true_f*y_pred_f)
         return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps)
 
-    url = "https://drive.google.com/uc?export=download&id=1_KIjFg65lGErKFS05CCTdO2R7ci4rAKW"
+    # url = "https://drive.google.com/uc?export=download&id=1_KIjFg65lGErKFS05CCTdO2R7ci4rAKW"
+    url = kwargs["URL_model"] 
 
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
         # Load model from gdrive

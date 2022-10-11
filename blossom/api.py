@@ -128,6 +128,9 @@ def train(**args):
     path_masks_data = cfg.DATA_MASK
     print("path image data",path_image_data)
     print("path mask data",path_masks_data)
+    
+    output_zip_model_opt_thr = tempfile.TemporaryDirectory() # Where to save model h5 and opt txt
+    output_zip_model_opt_thr_path_dir = output_zip_model_opt_thr.name
 
     def fabriquer_train(path):
         dico = {}
@@ -449,7 +452,12 @@ def train(**args):
         monitor='val_loss', patience=5, verbose=1, mode='auto') #Stop training when a monitored metric has stopped improving.
 
     # checkpoint_filepath = 'output_best_model.h5'
-    checkpoint_filepath = os.path.join(paths.get_models_dir(),"output_best_model.h5")
+    # checkpoint_filepath = os.path.join(paths.get_models_dir(),"output_best_model.h5")
+    # Model_check = tf.keras.callbacks.ModelCheckpoint(
+    #     checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True,
+    #     save_weights_only=False, mode='auto') #Callback to save the Keras model or model weights at some frequency.
+    
+    checkpoint_filepath = os.path.join(output_zip_model_opt_thr_path_dir,"output_best_model.h5")
     Model_check = tf.keras.callbacks.ModelCheckpoint(
         checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True,
         save_weights_only=False, mode='auto') #Callback to save the Keras model or model weights at some frequency.
@@ -460,10 +468,11 @@ def train(**args):
                     callbacks=[early_stop,Model_check])
 
 
-    # RETRAIN
+    # BEST RETRAIN MODEL
     print("best model analysis...")
     print("best model loading : output_best_model.h5")
-    model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"output_best_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
+    # model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"output_best_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
+    model_New = tf.keras.models.load_model(os.path.join(output_zip_model_opt_thr_path_dir,"output_best_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
     
     model_New.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list)
     eval_test=model_New.evaluate(X_test_ensemble,y_test_ensemble)
@@ -503,14 +512,23 @@ def train(**args):
     print("Weight model save : output_weight_best_model.h5")
     # save weight function of keras doesn't work
     # use instead save function
-    model_New.save(os.path.join(paths.get_models_dir(),"output_weight_best_model.h5"))
+    # model_New.save(os.path.join(paths.get_models_dir(),"output_weight_best_model.h5"))
+    model_New.save(os.path.join(output_zip_model_opt_thr_path_dir,"output_weight_best_model.h5"))
+    
     
     # save op_thr in txt file
-    if os.path.exists(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt")):
+    # if os.path.exists(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt")):
+    #     print("output_optimal_threshold.txt already exist... delete")
+    #     os.remove(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt"))
+    if os.path.exists(os.path.join(output_zip_model_opt_thr_path_dir,"output_optimal_threshold.txt")):
         print("output_optimal_threshold.txt already exist... delete")
-        os.remove(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt"))
+        os.remove(os.path.join(output_zip_model_opt_thr_path_dir,"output_optimal_threshold.txt"))
 
-    f = open(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt"),"a")
+    # f = open(os.path.join(paths.get_models_dir(),"output_optimal_threshold.txt"),"a")
+    # f.write(str(op_thr))
+    # f.close()
+    # print("output_optimal_threshold.txt newly created")
+    f = open(os.path.join(output_zip_model_opt_thr_path_dir,"output_optimal_threshold.txt"),"a")
     f.write(str(op_thr))
     f.close()
     print("output_optimal_threshold.txt newly created")
@@ -582,7 +600,11 @@ def train(**args):
         output["retrain model"] = "worse"
     else:
         output["retrain model"] = "better"
+    
+    print("output zip files :",os.listdir(output_zip_model_opt_thr_path_dir))
+    
     print(output)
+    
     return output
 
 def get_mosaic_predict(img):
@@ -714,10 +736,10 @@ def predict(**kwargs):
             if (sz1_x,sz2_x)==(256,256):
                 X_ensemble[n]=img1_list[n]
 
-        f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
-        numer_opt_thr = f.read()
-        f.close()
-        op_thr = float(numer_opt_thr)
+        # f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
+        # numer_opt_thr = f.read()
+        # f.close()
+        # op_thr = float(numer_opt_thr)
 
         preds_test = model_New.predict(X_ensemble, verbose=1)
         preds_test_opt = (preds_test > op_thr).astype(np.uint8)
@@ -752,6 +774,7 @@ def predict(**kwargs):
         else:
             print(" no best_model_W_BCE_model.h5 found")
         
+        # Load opt_th
         f = open(opt_th_path,"r")
         numer_opt_thr = f.read()
         f.close()
@@ -760,13 +783,10 @@ def predict(**kwargs):
         
         zip_dir = tempfile.TemporaryDirectory()
         print(">>>>>>>>>>>>",zip_dir)
-        print(">>> 0")
         with ZipFile(filepath,'r') as zipObject:
             listOfFileNames = zipObject.namelist()
             for i in range(len(listOfFileNames)):
-                print(">>> x")
                 zipObject.extract(listOfFileNames[i],path=zip_dir.name)
-        print(">>> 1")
         dico = {}
         for x in os.listdir(zip_dir.name):
             dico[x] = os.path.join(zip_dir.name,x)
@@ -781,11 +801,11 @@ def predict(**kwargs):
         output_dir = tempfile.TemporaryDirectory()
 
         # Load opt_th
-        f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
-        numer_opt_thr = f.read()
-        print(">>>>>>>>>>>>",numer_opt_thr)
-        f.close()
-        op_thr = float(numer_opt_thr)
+        # f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
+        # numer_opt_thr = f.read()
+        # print(">>>>>>>>>>>>",numer_opt_thr)
+        # f.close()
+        # op_thr = float(numer_opt_thr)
 
         for ids in list(dico.keys()):
             

@@ -113,7 +113,7 @@ def get_train_args():
             description="batch_size",
         ),
         "URL_model": fields.Str(
-            required=True,
+            required=False,
             missing="None",
             description="Write url of models_image.zip in google drive",  # needed to be parsed by UI
         ),

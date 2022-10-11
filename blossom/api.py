@@ -112,10 +112,10 @@ def get_train_args():
             missing="2",
             description="batch_size",
         ),
-        "URL_model": fields.Str(
+        "Link": fields.Str(
             required=False,
             missing="None",
-            description="Write url of models_image.zip located into google drive",  # needed to be parsed by UI
+            description="Link of best_models_.zip located into google drive",  # needed to be parsed by UI
         ),
     }
     return arg_dict
@@ -414,7 +414,9 @@ def train(**args):
     print("model downloading...")
     output_dir_model = tempfile.TemporaryDirectory()
     output_path_dir = output_dir_model.name
-    url = yaml.safe_load(args["URL_model"])
+    link_zip_file = yaml.safe_load(args["Link"])
+    id_file = link_zip_file.split('/')[-2]
+    url = "https://drive.google.com/uc?export=download&id="+id_file
     
     output_zip_path = os.path.join(output_path_dir,'models_images.zip')
     print("Loading..")
@@ -436,11 +438,9 @@ def train(**args):
     
     
     # MODEL LOADED..
-    
-    print('x-')
+
     # model = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_W_BCE_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
     model = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
-    print('xx')
     opt = tf.keras.optimizers.Adam(learning_rate=learning_rate_user)
     model.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list) #weighted loss      
     model.summary()
@@ -663,7 +663,7 @@ def get_predict_args():
         "URL_model": fields.Str(
             required=False,
             missing="None",
-            description="Write url of models_image.zip located into google drive",  # needed to be parsed by UI
+            description="Link of best_models_.zip located into google drive",  # needed to be parsed by UI
         ),
         "accept": fields.Str(
             description="Media type(s) that is/are acceptable for the response.",
@@ -693,7 +693,9 @@ def predict(**kwargs):
         return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps)
 
     # url = "https://drive.google.com/uc?export=download&id=1_KIjFg65lGErKFS05CCTdO2R7ci4rAKW"
-    url = kwargs["URL_model"] 
+    link_zip_file = kwargs["URL_model"] 
+    id_file = link_zip_file.split('/')[-2]
+    url = "https://drive.google.com/uc?export=download&id="+id_file
 
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
         # Load model from gdrive

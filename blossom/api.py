@@ -115,7 +115,7 @@ def get_train_args():
         "URL_model": fields.Str(
             required=False,
             missing="None",
-            description="Write url of models_image.zip in google drive",  # needed to be parsed by UI
+            description="Write url of models_image.zip located into google drive",  # needed to be parsed by UI
         ),
     }
     return arg_dict

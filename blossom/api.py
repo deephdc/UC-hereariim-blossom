@@ -112,6 +112,11 @@ def get_train_args():
             missing="2",
             description="batch_size",
         ),
+        "URL_model": fields.Str(
+            required=True,
+            missing="None",
+            description="Write url of models_image.zip in google drive",  # needed to be parsed by UI
+        ),
     }
     return arg_dict
 
@@ -406,7 +411,8 @@ def train(**args):
     print("model downloading...")
     output_dir_model = tempfile.TemporaryDirectory()
     output_path_dir = output_dir_model.name
-    url = "https://drive.google.com/uc?export=download&id=17jlenF1sEPrrUjIe4bxjaMFzqhY1s8E2"
+    url = yaml.safe_load(args["URL_model"])
+    # url = "https://drive.google.com/uc?export=download&id=17jlenF1sEPrrUjIe4bxjaMFzqhY1s8E2"
     output_zip_path = os.path.join(output_path_dir,'models_images.zip')
     print("Loading..")
     gdown.download(url, output_zip_path, quiet=False)
@@ -417,18 +423,22 @@ def train(**args):
             zipObject.extract(listOfFileNames[i],path=output_path_dir)
         
     model_h5_path = os.path.join(output_path_dir,"best_model_W_BCE_model.h5")
+    opt_th_path = os.path.join(output_path_dir,"optimal_threshold.txt")
     if os.path.isfile(model_h5_path):
         print("best_model_W_BCE_model.h5 exist")
     else:
         print(" no best_model_W_BCE_model.h5 found")
     print("model downloaded !")
+    
+    
+    
     # MODEL LOADED..
     
     print('x-')
     # model = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_W_BCE_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
     model = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
     print('xx')
-    opt = tf.keras.optimizers.Adam(learning_rate=learning_rate_user) 
+    opt = tf.keras.optimizers.Adam(learning_rate=learning_rate_user)
     model.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list) #weighted loss      
     model.summary()
     
@@ -534,11 +544,14 @@ def train(**args):
     Mask_valid_pred_int= model_New.predict(x_val, verbose=2)
 
     # get op_thr
-    f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")
+    # f = open(os.path.join(paths.get_models_dir(),"optimal_threshold.txt"),"r")   
+    f = open(opt_th_path,"r")
     numer_opt_thr = f.read()
     f.close()
-
     op_thr = float(numer_opt_thr)
+
+
+    
 
     preds_test = model_New.predict(X_test_ensemble, verbose=1)
     # we apply a threshold on predicted mask (probability mask) to convert it to a binary mask.
@@ -619,11 +632,16 @@ def get_predict_args():
     """
     arg_dict = {
         "image": fields.Field(
-            required=False,
+            required=True,
             type="file",
             missing="None",
             location="form",
             description="Image",  # needed to be parsed by UI
+        ),
+        "URL model": fields.Str(
+            required=True,
+            missing="None",
+            description="Write url of models_image.zip in google drive",  # needed to be parsed by UI
         ),
         "accept": fields.Str(
             description="Media type(s) that is/are acceptable for the response.",
@@ -652,11 +670,13 @@ def predict(**kwargs):
         intersection =keras.backend.sum(y_true_f*y_pred_f)
         return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps)
 
+    # url = "https://drive.google.com/uc?export=download&id=17jlenF1sEPrrUjIe4bxjaMFzqhY1s8E2"
+
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
         # Load model from gdrive
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir = output_dir_model.name
-        url = "https://drive.google.com/uc?export=download&id=17jlenF1sEPrrUjIe4bxjaMFzqhY1s8E2"
+        
         output_zip_path = os.path.join(output_path_dir,'models_images.zip')
         print("Loading..")
         gdown.download(url, output_zip_path, quiet=False)
@@ -667,11 +687,16 @@ def predict(**kwargs):
                 zipObject.extract(listOfFileNames[i],path=output_path_dir)
         
         model_h5_path = os.path.join(output_path_dir,"best_model_W_BCE_model.h5")
+        opt_th_path = os.path.join(output_path_dir,"optimal_threshold.txt")
         if os.path.isfile(model_h5_path):
             print("best_model_W_BCE_model.h5 exist")
         else:
             print(" no best_model_W_BCE_model.h5 found")
-                
+            
+        f = open(opt_th_path,"r")
+        numer_opt_thr = f.read()
+        f.close()
+        op_thr = float(numer_opt_thr)
         
         
         # Process data
@@ -709,7 +734,7 @@ def predict(**kwargs):
         # Load model from gdrive
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir = output_dir_model.name
-        url = "https://drive.google.com/uc?export=download&id=17jlenF1sEPrrUjIe4bxjaMFzqhY1s8E2"
+        
         output_zip_path = os.path.join(output_path_dir,'models_images.zip')
         print("Loading..")
         gdown.download(url, output_zip_path, quiet=False)
@@ -720,11 +745,16 @@ def predict(**kwargs):
                 zipObject.extract(listOfFileNames[i],path=output_path_dir)
         
         model_h5_path = os.path.join(output_path_dir,"best_model_W_BCE_model.h5")
+        opt_th_path = os.path.join(output_path_dir,"optimal_threshold.txt")
         if os.path.isfile(model_h5_path):
             print("best_model_W_BCE_model.h5 exist")
         else:
             print(" no best_model_W_BCE_model.h5 found")
         
+        f = open(opt_th_path,"r")
+        numer_opt_thr = f.read()
+        f.close()
+        op_thr = float(numer_opt_thr)
         
         
         zip_dir = tempfile.TemporaryDirectory()

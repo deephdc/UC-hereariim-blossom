@@ -663,7 +663,7 @@ def get_predict_args():
         "URL_model": fields.Str(
             required=False,
             missing="None",
-            description="Write url of models_image.zip located into google drive",  # needed to be parsed by UI
+            description="Link of best_models_.zip located into google drive",  # needed to be parsed by UI
         ),
         "accept": fields.Str(
             description="Media type(s) that is/are acceptable for the response.",

@@ -670,7 +670,7 @@ def predict(**kwargs):
         intersection =keras.backend.sum(y_true_f*y_pred_f)
         return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps)
 
-    # url = "https://drive.google.com/uc?export=download&id=17jlenF1sEPrrUjIe4bxjaMFzqhY1s8E2"
+    url = "https://drive.google.com/uc?export=download&id=1_KIjFg65lGErKFS05CCTdO2R7ci4rAKW"
 
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
         # Load model from gdrive

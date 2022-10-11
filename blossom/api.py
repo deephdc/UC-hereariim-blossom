@@ -1,4 +1,5 @@
 from functools import wraps
+from genericpath import isfile
 import shutil
 import tempfile
 from marshmallow import missing
@@ -58,6 +59,7 @@ from sklearn.model_selection import train_test_split
 from skimage.filters import threshold_otsu
 import tensorflow as tf
 import os
+import gdown
 
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -627,10 +629,33 @@ def predict(**kwargs):
         return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps)
 
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
+        # Load model from gdrive
+        output_dir_model = tempfile.TemporaryDirectory()
+        output_path_dir = output_dir_model.name
+        url = "https://drive.google.com/uc?export=download&id=17jlenF1sEPrrUjIe4bxjaMFzqhY1s8E2"
+        output_zip_path = os.path.join(output_path_dir,'models_images.zip')
+        print("Loading..")
+        gdown.download(url, output_zip_path, quiet=False)
+        print(">>> output_dir_model",output_dir_model)
+        with ZipFile(output_zip_path,'r') as zipObject:
+            listOfFileNames = zipObject.namelist()
+            for i in range(len(listOfFileNames)):
+                zipObject.extract(listOfFileNames[i],path=output_path_dir)
+        
+        model_h5_path = os.path.join(output_path_dir,"best_model_W_BCE_model.h5")
+        if os.path.isfile(model_h5_path):
+            print("best_model_W_BCE_model.h5 exist")
+        else:
+            print(" no best_model_W_BCE_model.h5 found")
+                
+        
+        
+        # Process data
+        
         image_reshaped = imread(filepath)
         
         img1_list = get_mosaic_predict(image_reshaped)
-        model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),'best_model_W_BCE_model.h5'),custom_objects={'dice_coefficient': dice_coefficient})
+        model_New = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
 
         taille_p = 256
         X_ensemble = np.zeros((len(img1_list), taille_p, taille_p, 3), dtype=np.uint8)
@@ -657,6 +682,27 @@ def predict(**kwargs):
         return open(zip_path,"rb")
 
     elif originalname[-3:] in ['zip','ZIP']:
+        # Load model from gdrive
+        output_dir_model = tempfile.TemporaryDirectory()
+        output_path_dir = output_dir_model.name
+        url = "https://drive.google.com/uc?export=download&id=17jlenF1sEPrrUjIe4bxjaMFzqhY1s8E2"
+        output_zip_path = os.path.join(output_path_dir,'models_images.zip')
+        print("Loading..")
+        gdown.download(url, output_zip_path, quiet=False)
+        print(">>> output_dir_model",output_dir_model)
+        with ZipFile(output_zip_path,'r') as zipObject:
+            listOfFileNames = zipObject.namelist()
+            for i in range(len(listOfFileNames)):
+                zipObject.extract(listOfFileNames[i],path=output_path_dir)
+        
+        model_h5_path = os.path.join(output_path_dir,"best_model_W_BCE_model.h5")
+        if os.path.isfile(model_h5_path):
+            print("best_model_W_BCE_model.h5 exist")
+        else:
+            print(" no best_model_W_BCE_model.h5 found")
+        
+        
+        
         zip_dir = tempfile.TemporaryDirectory()
         print(">>>>>>>>>>>>",zip_dir)
         print(">>> 0")
@@ -672,8 +718,9 @@ def predict(**kwargs):
         print(">>> 2")
         # Load model
         print(">>>> ==")
-        print(os.path.join(paths.get_models_dir(),'best_model_W_BCE_model.h5'))
-        model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),'best_model_W_BCE_model.h5'),custom_objects={'dice_coefficient': dice_coefficient})
+        # print(os.path.join(paths.get_models_dir(),'best_model_W_BCE_model.h5'))
+        # model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),'best_model_W_BCE_model.h5'),custom_objects={'dice_coefficient': dice_coefficient})
+        model_New = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
         print(">>> 3")
         dico_prediction = {}
         output_dir = tempfile.TemporaryDirectory()

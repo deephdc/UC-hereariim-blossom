@@ -412,7 +412,7 @@ def train(**args):
     output_dir_model = tempfile.TemporaryDirectory()
     output_path_dir = output_dir_model.name
     url = yaml.safe_load(args["URL_model"])
-    # url = "https://drive.google.com/uc?export=download&id=17jlenF1sEPrrUjIe4bxjaMFzqhY1s8E2"
+    
     output_zip_path = os.path.join(output_path_dir,'models_images.zip')
     print("Loading..")
     gdown.download(url, output_zip_path, quiet=False)

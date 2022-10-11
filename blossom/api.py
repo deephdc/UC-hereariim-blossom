@@ -402,8 +402,31 @@ def train(**args):
         dico[x]=1-temp_dico[x]/s #<- vrai
     temp_list = list(dico.values())
     
+    # MODEL LOAD
+    print("model downloading...")
+    output_dir_model = tempfile.TemporaryDirectory()
+    output_path_dir = output_dir_model.name
+    url = "https://drive.google.com/uc?export=download&id=17jlenF1sEPrrUjIe4bxjaMFzqhY1s8E2"
+    output_zip_path = os.path.join(output_path_dir,'models_images.zip')
+    print("Loading..")
+    gdown.download(url, output_zip_path, quiet=False)
+    print(">>> output_dir_model",output_dir_model)
+    with ZipFile(output_zip_path,'r') as zipObject:
+        listOfFileNames = zipObject.namelist()
+        for i in range(len(listOfFileNames)):
+            zipObject.extract(listOfFileNames[i],path=output_path_dir)
+        
+    model_h5_path = os.path.join(output_path_dir,"best_model_W_BCE_model.h5")
+    if os.path.isfile(model_h5_path):
+        print("best_model_W_BCE_model.h5 exist")
+    else:
+        print(" no best_model_W_BCE_model.h5 found")
+    print("model downloaded !")
+    # MODEL LOADED..
+    
     print('x-')
-    model = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_W_BCE_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
+    # model = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_W_BCE_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
+    model = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
     print('xx')
     opt = tf.keras.optimizers.Adam(learning_rate=learning_rate_user) 
     model.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list) #weighted loss      
@@ -501,7 +524,8 @@ def train(**args):
     print("DICE RETRAIN :",dice_retrain)
 
     # TRUE MODEL
-    model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_W_BCE_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
+    # model_New = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_W_BCE_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
+    model_New = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
     model_New.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list)
     # model_New.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient])
 

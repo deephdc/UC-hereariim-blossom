@@ -189,7 +189,12 @@ def get_train_args():
             missing="2",
             description="batch_size",
         ),
-        "Link": fields.Str(
+        "Link_images": fields.Str(
+            required=False,
+            missing="None",
+            description="Link of image_user.zip located into google drive",  # needed to be parsed by UI
+        ),
+        "Link_model": fields.Str(
             required=False,
             missing="None",
             description="Link of best_models_.zip located into google drive",  # needed to be parsed by UI
@@ -201,6 +206,63 @@ def train(**args):
     output={}
     output["hyperparameter"]=args
     backend.clear_session()
+    
+    print("model downloading...")
+    output_dir_model = tempfile.TemporaryDirectory()
+    output_path_dir = output_dir_model.name
+    
+    output_dir_images = tempfile.TemporaryDirectory()
+    output_path_dir = output_dir_images.name
+    
+    link_zip_file_model = yaml.safe_load(args["Link_model"])
+    id_file_model = link_zip_file_model.split('/')[-2]
+    url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
+    
+    link_zip_file_images = yaml.safe_load(args["Link_images"])    
+    # Images zip
+    if link_zip_file_images!="None":
+        id_file_images = link_zip_file_images.split('/')[-2]
+        url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
+        output_zip_path = os.path.join(output_path_dir,'image_user.zip')
+        print("Loading..")
+        gdown.download(url_model, output_zip_path, quiet=False)
+        print(">>> output_dir_images",output_dir_images)
+        zip_dir = tempfile.TemporaryDirectory()
+        with ZipFile(output_dir_images,'r') as zipObject:
+            listOfFileNames = zipObject.namelist()
+            for i in range(len(listOfFileNames)):
+                zipObject.extract(listOfFileNames[i],path=zip_dir.name)
+        A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]
+        verif = A1[0].split('\\')
+        if verif[-1]=='images':
+            path_image = A1[0]
+            path_mask = A1[1]
+        else:
+            path_image = A1[1]
+            path_mask = A1[0]        
+    else:
+        path_image_data = cfg.DATA_IMAGE
+        path_masks_data = cfg.DATA_MASK
+    
+    # Model zip
+    output_zip_path = os.path.join(output_path_dir,'models_images.zip')
+    print("Loading..")
+    gdown.download(url_model, output_zip_path, quiet=False)
+    print(">>> output_dir_model",output_dir_model)
+    with ZipFile(output_zip_path,'r') as zipObject:
+        listOfFileNames = zipObject.namelist()
+        for i in range(len(listOfFileNames)):
+            zipObject.extract(listOfFileNames[i],path=output_path_dir)
+    
+    print(os.listdir(output_path_dir))
+    model_h5_path = os.path.join(output_path_dir,"best_model_W_BCE_model.h5")
+    weight_h5_path = os.path.join(output_path_dir,"best_model.h5")
+    opt_th_path = os.path.join(output_path_dir,"optimal_threshold.txt")
+    if os.path.isfile(model_h5_path):
+        print("best_model_W_BCE_model.h5 exist")
+    else:
+        print(" no best_model_W_BCE_model.h5 found")
+    print("model downloaded !")
     
     # image_user = yaml.safe_load(args["image"])
     # print("image_user",image_user)
@@ -503,34 +565,6 @@ def train(**args):
         dico[x]=1-temp_dico[x]/s #<- vrai
     temp_list = list(dico.values())
     
-    # MODEL LOAD
-    print("model downloading...")
-    output_dir_model = tempfile.TemporaryDirectory()
-    output_path_dir = output_dir_model.name
-    link_zip_file = yaml.safe_load(args["Link"])
-    id_file = link_zip_file.split('/')[-2]
-    url = "https://drive.google.com/uc?export=download&id="+id_file
-    
-    output_zip_path = os.path.join(output_path_dir,'models_images.zip')
-    print("Loading..")
-    gdown.download(url, output_zip_path, quiet=False)
-    print(">>> output_dir_model",output_dir_model)
-    with ZipFile(output_zip_path,'r') as zipObject:
-        listOfFileNames = zipObject.namelist()
-        for i in range(len(listOfFileNames)):
-            zipObject.extract(listOfFileNames[i],path=output_path_dir)
-    
-    print(os.listdir(output_path_dir))
-    model_h5_path = os.path.join(output_path_dir,"best_model_W_BCE_model.h5")
-    weight_h5_path = os.path.join(output_path_dir,"best_model.h5")
-    opt_th_path = os.path.join(output_path_dir,"optimal_threshold.txt")
-    if os.path.isfile(model_h5_path):
-        print("best_model_W_BCE_model.h5 exist")
-    else:
-        print(" no best_model_W_BCE_model.h5 found")
-    print("model downloaded !")
-    
-    
     
     # MODEL LOADED..
     
@@ -542,10 +576,11 @@ def train(**args):
     # model = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
     opt = tf.keras.optimizers.Adam(learning_rate=learning_rate_user)
     model.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list) #weighted loss      
-    model.summary() 
     print('x-')
     model.load_weights(weight_h5_path)  
     print('xx')
+    model.summary() 
+
     
     
     early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto') #Stop training when a monitored metric has stopped improving.

@@ -46,6 +46,7 @@ import imshowpair
 from collections import Counter
 from focal_loss import BinaryFocalLoss
 import pathlib
+from tqdm import tqdm
 
 # Library of training
 
@@ -61,13 +62,6 @@ import tensorflow as tf
 import os
 import gdown
 
-
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
-
 def _catch_error(f):
     @wraps(f)
     def wrap(*args,**kwargs):
@@ -76,6 +70,82 @@ def _catch_error(f):
         except Exception as e:
             raise web.HTTPBadRequest(reason=e)
     return wrap
+
+def conv2d_block(input_tensor, n_filters, kernel_size=3):
+    # first layer
+    x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size),
+                padding="same")(input_tensor) # padding="valid"
+    x = Activation("relu")(x)
+    # second layer
+    x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size),
+                padding="same")(x)
+    x = Activation("relu")(x)
+    return x
+
+def get_unet(input_img, n_filters,kernel_size=3):
+    # contracting path # encoder
+    c1 = conv2d_block(input_img, n_filters=n_filters*4, kernel_size=3) #The first block of U-net
+    p1 = MaxPooling2D((2, 2)) (c1)
+
+    c2 = conv2d_block(p1, n_filters=n_filters*8, kernel_size=3)
+    p2 = MaxPooling2D((2, 2)) (c2)
+
+    c3 = conv2d_block(p2, n_filters=n_filters*16, kernel_size=3)
+    p3 = MaxPooling2D((2, 2)) (c3)
+
+    c10 = conv2d_block(p3, n_filters=n_filters*16, kernel_size=3)
+    p10 = MaxPooling2D((2, 2)) (c10)
+
+    c12 = conv2d_block(p10, n_filters=n_filters*16, kernel_size=3)
+    p12 = MaxPooling2D((2, 2)) (c12)
+
+    c14 = conv2d_block(p12, n_filters=n_filters*16, kernel_size=3)
+    p14 = MaxPooling2D((2, 2)) (c14)
+
+    c4 = conv2d_block(p14, n_filters=n_filters*32, kernel_size=3)
+    p4 = MaxPooling2D(pool_size=(2, 2)) (c4)
+
+    c5 = conv2d_block(p4, n_filters=n_filters*64, kernel_size=3) # last layer on encoding path
+
+    # expansive path # decoder
+    u6 = Conv2DTranspose(n_filters*32, (3, 3), strides=(2, 2), padding='same') (c5) #upsampling included
+    u6 = concatenate([u6, c4])
+    c6 = conv2d_block(u6, n_filters=n_filters*32, kernel_size=3)
+
+    u15 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c6)
+    u15 = concatenate([u15, c14])
+    c15 = conv2d_block(u15, n_filters=n_filters*16, kernel_size=3)
+
+    u13 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c15)
+    u13 = concatenate([u13, c12])
+    c13 = conv2d_block(u13, n_filters=n_filters*16, kernel_size=3)
+
+    u11 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c13)
+    u11 = concatenate([u11, c10])
+    c11 = conv2d_block(u11, n_filters=n_filters*16, kernel_size=3)
+
+    u7 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c11)
+    u7 = concatenate([u7, c3])
+    c7 = conv2d_block(u7, n_filters=n_filters*16, kernel_size=3)
+
+    u8 = Conv2DTranspose(n_filters*8, (3, 3), strides=(2, 2), padding='same') (c7)
+    u8 = concatenate([u8, c2])
+    c8 = conv2d_block(u8, n_filters=n_filters*8, kernel_size=3)
+
+    u9 = Conv2DTranspose(n_filters*4, (3, 3), strides=(2, 2), padding='same') (c8)
+    u9 = concatenate([u9, c1], axis=3)
+    c9 = conv2d_block(u9, n_filters=n_filters*4, kernel_size=3)
+
+    outputs = Conv2D(1, (1, 1), activation='sigmoid') (c9)
+    model = tf.keras.models.Model(inputs=[input_img], outputs=[outputs])
+    return model
+
+def dice_coefficient(y_true, y_pred):
+    eps = 1e-6
+    y_true_f = keras.backend.flatten(y_true)
+    y_pred_f = keras.backend.flatten(y_pred)
+    intersection = keras.backend.sum(y_true_f * y_pred_f)
+    return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps) # eps pour éviter la division par 0
 
 def get_metadata():
     metadata = {
@@ -97,16 +167,23 @@ def get_metadata():
 
 def get_train_args():
     arg_dict = {
+        # "image": fields.Field(
+        #     required=False,
+        #     type="file",
+        #     missing="None",
+        #     location="form",
+        #     description="Compressed file .zip of images and masks",  # needed to be parsed by UI
+        # ),
         "learning_rate": fields.Str(
             required = False,
             missing="0.0007",
             description="learning rate",
         ),
-        # "filtre": fields.Str(
-        #     required = False,
-        #     missing="3",
-        #     description="filtre",
-        # ),
+        "noyau": fields.Str(
+            required = False,
+            missing="3",
+            description="Taille des noyau",
+        ),
         "batch_size": fields.Str(
             required = False,
             missing="2",
@@ -124,6 +201,29 @@ def train(**args):
     output={}
     output["hyperparameter"]=args
     backend.clear_session()
+    
+    # image_user = yaml.safe_load(args["image"])
+    # print("image_user",image_user)
+    # print("image_user",image_user)
+    
+    # if image_user!="None":
+    #     zip_dir = tempfile.TemporaryDirectory()
+    #     with ZipFile(image_user,'r') as zipObject:
+    #         listOfFileNames = zipObject.namelist()
+    #         for i in range(len(listOfFileNames)):
+    #             zipObject.extract(listOfFileNames[i],path=zip_dir.name)
+    #     A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]
+    #     verif = A1[0].split('\\')
+    #     if verif[-1]=='images':
+    #         path_image = A1[0]
+    #         path_mask = A1[1]
+    #     else:
+    #         path_image = A1[1]
+    #         path_mask = A1[0]
+        
+    # else:
+    #     path_image_data = cfg.DATA_IMAGE
+    #     path_masks_data = cfg.DATA_MASK
     path_image_data = cfg.DATA_IMAGE
     path_masks_data = cfg.DATA_MASK
     print("path image data",path_image_data)
@@ -230,17 +330,13 @@ def train(**args):
 
     y_test_masks = [cfg.DATA_MASK+'\\'+files for files in y_test] #Y_test <- masks
 
-    for files_image,files_mask in zip(X_train_image,Y_train_masks):
-        print(files_image,files_mask)
-        print("step 1")
-        print(files_image)
-        print(files_mask)
+    for files_image,files_mask in tqdm(zip(X_train_image,Y_train_masks),total = len(X_train_image), desc ="Processing"):
+
         img1 = imread(files_image)[:,:,:3]
         img2 = imread(files_mask)[:,:,:3]
-        print("step 2")
+ 
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)
-        print("done")
 
         #on écarte les images avec un seul label
         for x,y in zip(img1_list,img2_list):
@@ -258,19 +354,19 @@ def train(**args):
                 X_train_list.append(x)
                 y_train_list.append(mask_)
 
-    print("Total image train pour training step :")
+    print("Total image train for training step :")
     print("x_train :",len(X_train_list))
     print("y_train :",len(y_train_list))
 
     #TEST
 
-    print("Nombre image",len(X_test))
-    print("Nombre masque",len(y_test))
+    print("Total image in test sample",len(X_test))
+    print("Total mask in test sample",len(y_test))
 
     X_test_list = []
     y_test_list = []
 
-    for files_image,files_mask in zip(X_test_images,y_test_masks):
+    for files_image,files_mask in tqdm(zip(X_test_images,y_test_masks),total = len(X_test_images), desc ="Processing"):
         img1 = imread(files_image)[:,:,:3]
         img2 = imread(files_mask)[:,:,:3]
         img1_list = get_mosaic(img1)
@@ -311,74 +407,74 @@ def train(**args):
         X_test_ensemble[n]=X_test_list[n]
         y_test_ensemble[m]=y_test_list[m]
 
-    def conv2d_block(input_tensor, n_filters, kernel_size=3):
-        # first layer
-        x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size),
-                padding="same")(input_tensor) # padding="valid"
-        x = Activation("relu")(x)
-        # second layer
-        x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size),
-                padding="same")(x)
-        x = Activation("relu")(x)
-        return x
+    # def conv2d_block(input_tensor, n_filters, kernel_size=3):
+    #     # first layer
+    #     x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size),
+    #             padding="same")(input_tensor) # padding="valid"
+    #     x = Activation("relu")(x)
+    #     # second layer
+    #     x = Conv2D(filters=n_filters, kernel_size=(kernel_size, kernel_size),
+    #             padding="same")(x)
+    #     x = Activation("relu")(x)
+    #     return x
 
-    def get_unet(input_img, n_filters,kernel_size=3):
-        # contracting path # encoder
-        c1 = conv2d_block(input_img, n_filters=n_filters*4, kernel_size=3) #The first block of U-net
-        p1 = MaxPooling2D((2, 2)) (c1)
+    # def get_unet(input_img, n_filters,kernel_size=3):
+    #     # contracting path # encoder
+    #     c1 = conv2d_block(input_img, n_filters=n_filters*4, kernel_size=3) #The first block of U-net
+    #     p1 = MaxPooling2D((2, 2)) (c1)
 
-        c2 = conv2d_block(p1, n_filters=n_filters*8, kernel_size=3)
-        p2 = MaxPooling2D((2, 2)) (c2)
+    #     c2 = conv2d_block(p1, n_filters=n_filters*8, kernel_size=3)
+    #     p2 = MaxPooling2D((2, 2)) (c2)
 
-        c3 = conv2d_block(p2, n_filters=n_filters*16, kernel_size=3)
-        p3 = MaxPooling2D((2, 2)) (c3)
+    #     c3 = conv2d_block(p2, n_filters=n_filters*16, kernel_size=3)
+    #     p3 = MaxPooling2D((2, 2)) (c3)
 
-        c10 = conv2d_block(p3, n_filters=n_filters*16, kernel_size=3)
-        p10 = MaxPooling2D((2, 2)) (c10)
+    #     c10 = conv2d_block(p3, n_filters=n_filters*16, kernel_size=3)
+    #     p10 = MaxPooling2D((2, 2)) (c10)
 
-        c12 = conv2d_block(p10, n_filters=n_filters*16, kernel_size=3)
-        p12 = MaxPooling2D((2, 2)) (c12)
+    #     c12 = conv2d_block(p10, n_filters=n_filters*16, kernel_size=3)
+    #     p12 = MaxPooling2D((2, 2)) (c12)
 
-        c14 = conv2d_block(p12, n_filters=n_filters*16, kernel_size=3)
-        p14 = MaxPooling2D((2, 2)) (c14)
+    #     c14 = conv2d_block(p12, n_filters=n_filters*16, kernel_size=3)
+    #     p14 = MaxPooling2D((2, 2)) (c14)
 
-        c4 = conv2d_block(p14, n_filters=n_filters*32, kernel_size=3)
-        p4 = MaxPooling2D(pool_size=(2, 2)) (c4)
+    #     c4 = conv2d_block(p14, n_filters=n_filters*32, kernel_size=3)
+    #     p4 = MaxPooling2D(pool_size=(2, 2)) (c4)
 
-        c5 = conv2d_block(p4, n_filters=n_filters*64, kernel_size=3) # last layer on encoding path
+    #     c5 = conv2d_block(p4, n_filters=n_filters*64, kernel_size=3) # last layer on encoding path
 
-        # expansive path # decoder
-        u6 = Conv2DTranspose(n_filters*32, (3, 3), strides=(2, 2), padding='same') (c5) #upsampling included
-        u6 = concatenate([u6, c4])
-        c6 = conv2d_block(u6, n_filters=n_filters*32, kernel_size=3)
+    #     # expansive path # decoder
+    #     u6 = Conv2DTranspose(n_filters*32, (3, 3), strides=(2, 2), padding='same') (c5) #upsampling included
+    #     u6 = concatenate([u6, c4])
+    #     c6 = conv2d_block(u6, n_filters=n_filters*32, kernel_size=3)
 
-        u15 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c6)
-        u15 = concatenate([u15, c14])
-        c15 = conv2d_block(u15, n_filters=n_filters*16, kernel_size=3)
+    #     u15 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c6)
+    #     u15 = concatenate([u15, c14])
+    #     c15 = conv2d_block(u15, n_filters=n_filters*16, kernel_size=3)
 
-        u13 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c15)
-        u13 = concatenate([u13, c12])
-        c13 = conv2d_block(u13, n_filters=n_filters*16, kernel_size=3)
+    #     u13 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c15)
+    #     u13 = concatenate([u13, c12])
+    #     c13 = conv2d_block(u13, n_filters=n_filters*16, kernel_size=3)
 
-        u11 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c13)
-        u11 = concatenate([u11, c10])
-        c11 = conv2d_block(u11, n_filters=n_filters*16, kernel_size=3)
+    #     u11 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c13)
+    #     u11 = concatenate([u11, c10])
+    #     c11 = conv2d_block(u11, n_filters=n_filters*16, kernel_size=3)
 
-        u7 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c11)
-        u7 = concatenate([u7, c3])
-        c7 = conv2d_block(u7, n_filters=n_filters*16, kernel_size=3)
+    #     u7 = Conv2DTranspose(n_filters*16, (3, 3), strides=(2, 2), padding='same') (c11)
+    #     u7 = concatenate([u7, c3])
+    #     c7 = conv2d_block(u7, n_filters=n_filters*16, kernel_size=3)
 
-        u8 = Conv2DTranspose(n_filters*8, (3, 3), strides=(2, 2), padding='same') (c7)
-        u8 = concatenate([u8, c2])
-        c8 = conv2d_block(u8, n_filters=n_filters*8, kernel_size=3)
+    #     u8 = Conv2DTranspose(n_filters*8, (3, 3), strides=(2, 2), padding='same') (c7)
+    #     u8 = concatenate([u8, c2])
+    #     c8 = conv2d_block(u8, n_filters=n_filters*8, kernel_size=3)
 
-        u9 = Conv2DTranspose(n_filters*4, (3, 3), strides=(2, 2), padding='same') (c8)
-        u9 = concatenate([u9, c1], axis=3)
-        c9 = conv2d_block(u9, n_filters=n_filters*4, kernel_size=3)
+    #     u9 = Conv2DTranspose(n_filters*4, (3, 3), strides=(2, 2), padding='same') (c8)
+    #     u9 = concatenate([u9, c1], axis=3)
+    #     c9 = conv2d_block(u9, n_filters=n_filters*4, kernel_size=3)
 
-        outputs = Conv2D(1, (1, 1), activation='sigmoid') (c9)
-        model = tf.keras.models.Model(inputs=[input_img], outputs=[outputs])
-        return model
+    #     outputs = Conv2D(1, (1, 1), activation='sigmoid') (c9)
+    #     model = tf.keras.models.Model(inputs=[input_img], outputs=[outputs])
+    #     return model
 
     def dice_coefficient(y_true, y_pred):
         eps = 1e-6
@@ -389,12 +485,9 @@ def train(**args):
 
     x_train, x_val, y_train, y_val = train_test_split(X_train_ensemble, y_train_ensemble, test_size=0.2, random_state=42) 
 
-    # n_filters_user = yaml.safe_load(args["filtre"])
+    size_kernel_user = yaml.safe_load(args["noyau"])
     learning_rate_user = yaml.safe_load(args["learning_rate"])
     batch_size_user = yaml.safe_load(args["batch_size"])
-
-    # input_img = Input((256,256, 3), name='img')
-    # model = get_unet(input_img, n_filters=n_filters_user, kernel_size=3) # nombre de filtre
 
     PIXEL = []
     for sample_y in y_train_ensemble: # image dans Y_train (masque de segmentation dans la phase d'entrainement)
@@ -426,8 +519,10 @@ def train(**args):
         listOfFileNames = zipObject.namelist()
         for i in range(len(listOfFileNames)):
             zipObject.extract(listOfFileNames[i],path=output_path_dir)
-        
+    
+    print(os.listdir(output_path_dir))
     model_h5_path = os.path.join(output_path_dir,"best_model_W_BCE_model.h5")
+    weight_h5_path = os.path.join(output_path_dir,"best_model.h5")
     opt_th_path = os.path.join(output_path_dir,"optimal_threshold.txt")
     if os.path.isfile(model_h5_path):
         print("best_model_W_BCE_model.h5 exist")
@@ -438,18 +533,22 @@ def train(**args):
     
     
     # MODEL LOADED..
+    
+    input_img = Input((256,256, 3), name='img')
+    # model = get_unet(input_img, n_filters=n_filters_user, kernel_size=3) # nombre de filtre
+    model = get_unet(input_img, n_filters=3, kernel_size=size_kernel_user) # nombre de filtre
 
     # model = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_W_BCE_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
-    model = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
+    # model = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
     opt = tf.keras.optimizers.Adam(learning_rate=learning_rate_user)
     model.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list) #weighted loss      
-    model.summary()
+    model.summary() 
+    print('x-')
+    model.load_weights(weight_h5_path)  
+    print('xx')
     
     
-    # model.load_weights(os.path.join(paths.get_models_dir(),"best_model_weight_W_BCE_model.h5"))  
-    
-    early_stop = tf.keras.callbacks.EarlyStopping(
-        monitor='val_loss', patience=5, verbose=1, mode='auto') #Stop training when a monitored metric has stopped improving.
+    early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto') #Stop training when a monitored metric has stopped improving.
 
     # checkpoint_filepath = 'output_best_model.h5'
     # checkpoint_filepath = os.path.join(paths.get_models_dir(),"output_best_model.h5")
@@ -660,7 +759,7 @@ def get_predict_args():
             location="form",
             description="Image",  # needed to be parsed by UI
         ),
-        "URL_model": fields.Str(
+        "Link": fields.Str(
             required=False,
             missing="None",
             description="Link of best_models_.zip located into google drive",  # needed to be parsed by UI

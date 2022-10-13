@@ -678,11 +678,10 @@ def train(**args):
     if x=="" or x=='Y':
         gauth = GoogleAuth()           
         drive = GoogleDrive(gauth)  
-        path_folder_to_image = r"C:\Users\User\OneDrive - Université de Bourgogne\Documents\Stage\EGI\input\mask"
 
-        A = os.listdir(path_folder_to_image) #contient seulement et uniquement des fichiers !!!
+        A = os.listdir(output_zip_model_opt_thr_path_dir) #contient seulement et uniquement des fichiers !!!
         # print(os.listdir(path_folder_to_image)) 
-        PATH_mask = [os.path.join(path_folder_to_image,ix) for ix in A]
+        PATH_mask = [os.path.join(output_zip_model_opt_thr_path_dir,ix) for ix in A]
         print(PATH_mask)
 
         id_output_folder = "1JMeVNJPrOtK13ZIqE8Q7R5PSqFpHRGFZ"

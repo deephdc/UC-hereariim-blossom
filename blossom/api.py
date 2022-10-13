@@ -179,15 +179,31 @@ def get_train_args():
             missing="0.0007",
             description="learning rate",
         ),
-        "noyau": fields.Str(
-            required = False,
-            missing="3",
-            description="Taille des noyau",
+        "loss_function": fields.Str(
+            required=False,  # force the user to define the value
+            missing="weighted loss",  # default value to use
+            enum=["weighted_loss", "focal_loss"],  # list of choices
+            description="Loss function"  # help string
         ),
+        # "noyau": fields.Str(
+        #     required = False,
+        #     missing="3",
+        #     description="Taille des noyau",
+        # ),
         "batch_size": fields.Str(
             required = False,
             missing="2",
             description="batch_size",
+        ),
+        "epoch": fields.Str(
+            required = False,
+            missing="50",
+            description="Epoch",
+        ),
+        "gamma": fields.Str(
+            required = False,
+            missing="0.2",
+            description="If focal loss selected, then choose your gamma value",
         ),
         "Link_images": fields.Str(
             required=False,
@@ -208,56 +224,62 @@ def train(**args):
     backend.clear_session()
     
     print("model downloading...")
+    
+
+    
+    link_zip_file_images = yaml.safe_load(args["Link_images"])    
+    # Images zip
+    print("link_zip_file_images ",link_zip_file_images)
+    if link_zip_file_images!="None":
+        output_dir_images = tempfile.TemporaryDirectory()
+        output_path_dir_images = output_dir_images.name
+        
+        id_file_images = link_zip_file_images.split('/')[-2]
+        url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
+        output_zip_path = os.path.join(output_path_dir_images,'image_user.zip')
+        print("Loading..")
+        gdown.download(url_images, output_zip_path, quiet=False)
+        print(">>> output_dir_images",output_dir_images)
+        zip_dir = tempfile.TemporaryDirectory()
+        with ZipFile(output_zip_path,'r') as zipObject:
+            listOfFileNames = zipObject.namelist()
+            print(listOfFileNames)
+            for i in range(len(listOfFileNames)):
+                zipObject.extract(listOfFileNames[i],path=zip_dir.name)
+        A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]
+        print("A1 ",A1)
+        verif = A1[0].split('\\')
+        if verif[-1]=='images':
+            path_image_data = A1[0]
+            path_masks_data = A1[1]
+        else:
+            path_image_data = A1[1]
+            path_masks_data = A1[0]        
+    else:
+        path_image_data = cfg.DATA_IMAGE
+        path_masks_data = cfg.DATA_MASK
+
+    # Model zip
     output_dir_model = tempfile.TemporaryDirectory()
-    output_path_dir = output_dir_model.name
-    
-    output_dir_images = tempfile.TemporaryDirectory()
-    output_path_dir = output_dir_images.name
-    
+    output_path_dir_model = output_dir_model.name
+        
     link_zip_file_model = yaml.safe_load(args["Link_model"])
     id_file_model = link_zip_file_model.split('/')[-2]
     url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
     
-    link_zip_file_images = yaml.safe_load(args["Link_images"])    
-    # Images zip
-    if link_zip_file_images!="None":
-        id_file_images = link_zip_file_images.split('/')[-2]
-        url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
-        output_zip_path = os.path.join(output_path_dir,'image_user.zip')
-        print("Loading..")
-        gdown.download(url_model, output_zip_path, quiet=False)
-        print(">>> output_dir_images",output_dir_images)
-        zip_dir = tempfile.TemporaryDirectory()
-        with ZipFile(output_dir_images,'r') as zipObject:
-            listOfFileNames = zipObject.namelist()
-            for i in range(len(listOfFileNames)):
-                zipObject.extract(listOfFileNames[i],path=zip_dir.name)
-        A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]
-        verif = A1[0].split('\\')
-        if verif[-1]=='images':
-            path_image = A1[0]
-            path_mask = A1[1]
-        else:
-            path_image = A1[1]
-            path_mask = A1[0]        
-    else:
-        path_image_data = cfg.DATA_IMAGE
-        path_masks_data = cfg.DATA_MASK
-    
-    # Model zip
-    output_zip_path = os.path.join(output_path_dir,'models_images.zip')
+    output_zip_path = os.path.join(output_path_dir_model,'models_images.zip')
     print("Loading..")
     gdown.download(url_model, output_zip_path, quiet=False)
     print(">>> output_dir_model",output_dir_model)
     with ZipFile(output_zip_path,'r') as zipObject:
         listOfFileNames = zipObject.namelist()
         for i in range(len(listOfFileNames)):
-            zipObject.extract(listOfFileNames[i],path=output_path_dir)
+            zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
     
-    print(os.listdir(output_path_dir))
-    model_h5_path = os.path.join(output_path_dir,"best_model_W_BCE_model.h5")
-    weight_h5_path = os.path.join(output_path_dir,"best_model.h5")
-    opt_th_path = os.path.join(output_path_dir,"optimal_threshold.txt")
+    print(os.listdir(output_path_dir_model))
+    model_h5_path = os.path.join(output_path_dir_model,"best_model_W_BCE_model.h5")
+    weight_h5_path = os.path.join(output_path_dir_model,"best_model.h5")
+    opt_th_path = os.path.join(output_path_dir_model,"optimal_threshold.txt")
     if os.path.isfile(model_h5_path):
         print("best_model_W_BCE_model.h5 exist")
     else:
@@ -286,8 +308,8 @@ def train(**args):
     # else:
     #     path_image_data = cfg.DATA_IMAGE
     #     path_masks_data = cfg.DATA_MASK
-    path_image_data = cfg.DATA_IMAGE
-    path_masks_data = cfg.DATA_MASK
+    # path_image_data = cfg.DATA_IMAGE
+    # path_masks_data = cfg.DATA_MASK
     print("path image data",path_image_data)
     print("path mask data",path_masks_data)
     
@@ -547,37 +569,46 @@ def train(**args):
 
     x_train, x_val, y_train, y_val = train_test_split(X_train_ensemble, y_train_ensemble, test_size=0.2, random_state=42) 
 
-    size_kernel_user = yaml.safe_load(args["noyau"])
+    # size_kernel_user = yaml.safe_load(args["noyau"])
     learning_rate_user = yaml.safe_load(args["learning_rate"])
     batch_size_user = yaml.safe_load(args["batch_size"])
+    gamma_user = yaml.safe_load(args["gamma"])
+    epoch_user = yaml.safe_load(args["epoch"])
+    
+    loss_function_user = yaml.safe_load(args["loss_function"])
 
-    PIXEL = []
-    for sample_y in y_train_ensemble: # image dans Y_train (masque de segmentation dans la phase d'entrainement)
-        x = np.squeeze(sample_y)
-    for i in range(255):
-        for j in range(255):
-            PIXEL.append(x[i][j])
-    temp_dico = dict(Counter(PIXEL))
-    V = temp_dico.values()
-    s = sum(V)
-    dico = {}
-    for x in temp_dico:
-        dico[x]=1-temp_dico[x]/s #<- vrai
-    temp_list = list(dico.values())
-    
-    
     # MODEL LOADED..
     
     input_img = Input((256,256, 3), name='img')
     # model = get_unet(input_img, n_filters=n_filters_user, kernel_size=3) # nombre de filtre
-    model = get_unet(input_img, n_filters=3, kernel_size=size_kernel_user) # nombre de filtre
+    # model = get_unet(input_img, n_filters=3, kernel_size=size_kernel_user) # nombre de filtre
 
     # model = tf.keras.models.load_model(os.path.join(paths.get_models_dir(),"best_model_W_BCE_model.h5"),custom_objects={'dice_coefficient': dice_coefficient})
-    # model = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
+    model = tf.keras.models.load_model(model_h5_path,custom_objects={'dice_coefficient': dice_coefficient})
     opt = tf.keras.optimizers.Adam(learning_rate=learning_rate_user)
-    model.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list) #weighted loss      
+
+    print('LOSS FUNCTION SELECTED :', loss_function_user)
+    if loss_function_user=="weighted_loss":
+        PIXEL = []
+        for sample_y in y_train_ensemble: # image dans Y_train (masque de segmentation dans la phase d'entrainement)
+            x = np.squeeze(sample_y)
+        for i in range(255):
+            for j in range(255):
+                PIXEL.append(x[i][j])
+        temp_dico = dict(Counter(PIXEL))
+        V = temp_dico.values()
+        s = sum(V)
+        dico = {}
+        for x in temp_dico:
+            dico[x]=1-temp_dico[x]/s #<- vrai
+        temp_list = list(dico.values())
+    
+        model.compile(optimizer=opt, loss="binary_crossentropy", metrics=[dice_coefficient],loss_weights=temp_list) #weighted loss      
+    else:
+        model.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient]) #weighted loss      
     print('x-')
-    model.load_weights(weight_h5_path)  
+    # model.load_weights(weight_h5_path)  
+    model.load_weights(model_h5_path)  
     print('xx')
     model.summary() 
 
@@ -598,7 +629,7 @@ def train(**args):
     print("training steps")
     results = model.fit(x_train,y_train,
                     validation_data=(x_val,y_val),
-                    epochs=50, batch_size = batch_size_user,
+                    epochs=epoch_user, batch_size = batch_size_user,
                     callbacks=[early_stop,Model_check])
 
 

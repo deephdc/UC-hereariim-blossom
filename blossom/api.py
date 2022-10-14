@@ -64,6 +64,10 @@ from skimage.filters import threshold_otsu
 import tensorflow as tf
 import os
 import gdown
+import pkg_resources
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[1]
 
 def _catch_error(f):
     @wraps(f)
@@ -157,23 +161,35 @@ def dice_coefficient(y_true, y_pred):
     intersection = keras.backend.sum(y_true_f * y_pred_f)
     return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps) # eps pour éviter la division par 0
 
+@_catch_error
 def get_metadata():
-    metadata = {
-        "name": fields.Str(required=True,
-                       description='Blossom'),
-        "version": fields.Str(required=False,
-                          description='Model version'),
-        "summary": fields.Str(required=False,
-                         description='This module gives you a model to segment blossoming apple tree'),
-        #"home-page": None,
-        "author": fields.Str(required=False,
-                         description='Herearii Metuarea'),
-        "author-email": "herearii.metuarea@gmail.com",
-        #"license": "MIT",
-        "license": fields.Str(required=False,
-                          description='MIT'),
+    """
+    DO NOT REMOVE - All modules should have a get_metadata() function
+    with appropriate keys.
+    """
+    distros = list(pkg_resources.find_distributions(str(BASE_DIR), only=True))
+    if len(distros) == 0:
+        raise Exception("No package found.")
+    pkg = distros[0]  # if several select first
+
+    meta_fields = {
+        "name": None,
+        "version": None,
+        "summary": None,
+        "home-page": None,
+        "author": None,
+        "author-email": None,
+        "license": None,
     }
-    return metadata
+    meta = {}
+    for line in pkg.get_metadata_lines("PKG-INFO"):
+        line_low = line.lower()  # to avoid inconsistency due to letter cases
+        for k in meta_fields:
+            if line_low.startswith(k + ":"):
+                _, value = line.split(": ", 1)
+                meta[k] = value
+
+    return meta
 
 def get_train_args():
     arg_dict = {

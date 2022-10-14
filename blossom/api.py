@@ -292,7 +292,7 @@ def train(**args):
     link_zip_file_model = yaml.safe_load(args["Link_model"])
     id_file_model = link_zip_file_model.split('/')[-2]
     url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
-    
+    print("ici")
     output_zip_path = os.path.join(output_path_dir_model,'models_images.zip')
     print("Loading..")
     gdown.download(url_model, output_zip_path, quiet=False)
@@ -794,7 +794,7 @@ def predict(**kwargs):
         return (2. * intersection) / (keras.backend.sum(y_true_f * y_true_f) + keras.backend.sum(y_pred_f * y_pred_f) + eps)
 
     # url = "https://drive.google.com/uc?export=download&id=1_KIjFg65lGErKFS05CCTdO2R7ci4rAKW"
-    link_zip_file = kwargs["URL_model"] 
+    link_zip_file = kwargs["Link"] 
     id_file = link_zip_file.split('/')[-2]
     url = "https://drive.google.com/uc?export=download&id="+id_file
 
@@ -802,7 +802,7 @@ def predict(**kwargs):
         # Load model from gdrive
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir = output_dir_model.name
-        
+        print("ici")
         output_zip_path = os.path.join(output_path_dir,'models_images.zip')
         print("Loading..")
         gdown.download(url, output_zip_path, quiet=False)
@@ -860,7 +860,7 @@ def predict(**kwargs):
         # Load model from gdrive
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir = output_dir_model.name
-        
+        print("ici")
         output_zip_path = os.path.join(output_path_dir,'models_images.zip')
         print("Loading..")
         gdown.download(url, output_zip_path, quiet=False)

@@ -487,25 +487,26 @@ def train(**args):
 
         img1 = imread(files_image)[:,:,:3]
         img2 = imread(files_mask)[:,:,:3]
-        print('=')
+        print('=---')
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)
-
+        print('==--')
         #on écarte les images avec un seul label
         for x,y in zip(img1_list,img2_list):
             sz1_x,sz2_x,sz3_x = x.shape
             sz1_y,sz2_y,sz3_y = y.shape
-
+            print('===-')
             #masque
             gray_file = rgb2gray(y)
             threshold = threshold_otsu(gray_file)
             binary_file = (gray_file > threshold)
             mask_ = np.expand_dims(binary_file, axis=-1)
-
+            print('====')
             L = dict(Counter(list(mask_.flatten())))
             if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
                 X_train_list.append(x)
                 y_train_list.append(mask_)
+            print('xxxx')
 
     print("Total image train for training step :")
     print("x_train :",len(X_train_list))

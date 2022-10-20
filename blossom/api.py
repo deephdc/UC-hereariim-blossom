@@ -498,8 +498,11 @@ def train(**args):
             print('===-')
             #masque
             gray_file = rgb2gray(y)
+            print('o--')
             threshold = threshold_otsu(gray_file)
+            print('oo-')
             binary_file = (gray_file > threshold)
+            print('ooo')
             mask_ = np.expand_dims(binary_file, axis=-1)
             print('====')
             L = dict(Counter(list(mask_.flatten())))

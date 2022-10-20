@@ -514,12 +514,14 @@ def train(**args):
 
             if len(Counter(gray_file.flatten()).keys())!=1:            
                 threshold = threshold_otsu(gray_file) #scikit-image 0.17.8 gray_file must have more than one value in matrix
-                binary_file = (gray_file > threshold)
-                mask_ = np.expand_dims(binary_file, axis=-1)
-                L = dict(Counter(list(mask_.flatten())))
-                if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
-                    X_train_list.append(x)
-                    y_train_list.append(mask_)
+            else:
+                threshold = list(Counter(gray_file.flatten()).keys())[0]
+            binary_file = (gray_file > threshold)
+            mask_ = np.expand_dims(binary_file, axis=-1)
+            L = dict(Counter(list(mask_.flatten())))
+            if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
+                X_train_list.append(x)
+                y_train_list.append(mask_)
 
 
     print("Total image train for training step :")
@@ -547,15 +549,18 @@ def train(**args):
 
             #masque
             gray_file = rgb2gray(y)
-            if len(Counter(gray_file.flatten()).keys())!=1:
-                threshold = threshold_otsu(gray_file)
-                binary_file = (gray_file > threshold)
-                mask_ = np.expand_dims(binary_file, axis=-1)
+            
+            if len(Counter(gray_file.flatten()).keys())!=1:            
+                threshold = threshold_otsu(gray_file) #scikit-image 0.17.8 gray_file must have more than one value in matrix
+            else:
+                threshold = list(Counter(gray_file.flatten()).keys())[0]
+            binary_file = (gray_file > threshold)
+            mask_ = np.expand_dims(binary_file, axis=-1)
 
-                L = dict(Counter(list(mask_.flatten())))
-                if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
-                    X_test_list.append(x)
-                    y_test_list.append(mask_)
+            L = dict(Counter(list(mask_.flatten())))
+            if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
+                X_test_list.append(x)
+                y_test_list.append(mask_)
 
     print("Total image test pour test step :")
     print("x_test :",len(X_test_list))
@@ -564,14 +569,14 @@ def train(**args):
     taille_p = 256
     X_train_ensemble = np.zeros((len(X_train_list), taille_p, taille_p, 3), dtype=np.uint8)
     y_train_ensemble = np.zeros((len(y_train_list), taille_p, taille_p, 1), dtype=np.bool)
-    print(":::::")
+
     for n,m in zip(range(len(X_train_list)),range(len(y_train_list))):
         X_train_ensemble[n]=X_train_list[n]
         y_train_ensemble[m]=y_train_list[m]
 
     X_test_ensemble = np.zeros((len(X_test_list), taille_p, taille_p, 3), dtype=np.uint8)
     y_test_ensemble = np.zeros((len(y_test_list), taille_p, taille_p, 1), dtype=np.bool)
-    print(":::::")
+
     for n,m in zip(range(len(X_test_list)),range(len(y_test_list))):
         X_test_ensemble[n]=X_test_list[n]
         y_test_ensemble[m]=y_test_list[m]
@@ -630,6 +635,10 @@ def train(**args):
         checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True,
         save_weights_only=False, mode='auto') #Callback to save the Keras model or model weights at some frequency.
     print("training steps")
+    print("total x_train :",x_train)
+    print("total y_train :",y_train)
+    print("total x_val :",x_val)
+    print("total y_val :",y_val)
     results = model.fit(x_train,y_train,
                     validation_data=(x_val,y_val),
                     epochs=epoch_user, batch_size = batch_size_user,

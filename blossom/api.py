@@ -782,8 +782,7 @@ def train(**args):
     
     print(output)
     
-    print('Do you want weight and model ? [Y/n]')
-    x = input()
+    x = input('Do you want weight and model ? [Y/n]')
     if x=="" or x=='Y':
         gauth = GoogleAuth()           
         drive = GoogleDrive(gauth)  

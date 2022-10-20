@@ -421,6 +421,9 @@ def train(**args):
 
     images_set = list(image_.keys())
     masks_set = list(masks_.keys())
+    
+    images_set.sort()
+    masks_set.sort()
 
     print("Train :",len(images_set),len(masks_set))
 
@@ -621,8 +624,8 @@ def train(**args):
     else:
         model.compile(optimizer=opt, loss=[BinaryFocalLoss(gamma=gamma_user)], metrics=[dice_coefficient]) #weighted loss      
 
-    # model.load_weights(weight_h5_path)  
-    model.load_weights(model_h5_path)  
+    model.load_weights(weight_h5_path)  
+    # model.load_weights(model_h5_path)  
 
     model.summary() 
 
@@ -635,10 +638,10 @@ def train(**args):
         checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True,
         save_weights_only=False, mode='auto') #Callback to save the Keras model or model weights at some frequency.
     print("training steps")
-    print("total x_train :",x_train)
-    print("total y_train :",y_train)
-    print("total x_val :",x_val)
-    print("total y_val :",y_val)
+    print("total x_train :",len(x_train))
+    print("total y_train :",len(y_train))
+    print("total x_val :",len(x_val))
+    print("total y_val :",len(y_val))
     results = model.fit(x_train,y_train,
                     validation_data=(x_val,y_val),
                     epochs=epoch_user, batch_size = batch_size_user,
@@ -782,8 +785,7 @@ def train(**args):
     
     print(output)
     
-    print('Do you want weight and model ? [Y/n]')
-    x = input()
+    x = input('Do you want weight and model ? [Y/n]')
     if x=="" or x=='Y':
         gauth = GoogleAuth()           
         drive = GoogleDrive(gauth)  

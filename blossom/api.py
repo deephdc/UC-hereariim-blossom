@@ -68,7 +68,7 @@ from pathlib import Path
 
 import subprocess
 from multiprocessing import Process
-import skimage
+
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 

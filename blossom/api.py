@@ -39,7 +39,6 @@ import matplotlib.pyplot as plt
 from itertools import chain
 from skimage.morphology import label
 from skimage.color import rgb2gray
-from skimage import color
 
 # from tensorflow.keras.models import Model, load_model
 

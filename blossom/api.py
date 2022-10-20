@@ -144,6 +144,13 @@ def launch_tensorboard(logdir, port=6006):
     )
     p = Process(target=launch_cmd, args=(logdir, port), daemon=True)
     p.start()
+    
+# try:
+#     mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
+#     mount_nextcloud('rshare:/data/images', paths.get_images_dir())
+#     #mount_nextcloud('rshare:/models', paths.get_models_dir())
+# except Exception as e:
+#     print(e)
 
 def conv2d_block(input_tensor, n_filters, kernel_size=3):
     # first layer
@@ -323,34 +330,42 @@ def train(**args):
     link_zip_file_images = yaml.safe_load(args["Link_images"])    
     # Images zip
     print("link_zip_file_images ",link_zip_file_images)
-    if link_zip_file_images!="None":
-        output_dir_images = tempfile.TemporaryDirectory()
-        output_path_dir_images = output_dir_images.name
+    
+    try:
         
-        id_file_images = link_zip_file_images.split('/')[-2]
-        url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
-        output_zip_path = os.path.join(output_path_dir_images,'image_user.zip')
-        print("Loading..")
-        gdown.download(url_images, output_zip_path, quiet=False)
-        # print(">>> output_dir_images",output_dir_images)
-        zip_dir = tempfile.TemporaryDirectory()
-        with ZipFile(output_zip_path,'r') as zipObject:
-            listOfFileNames = zipObject.namelist()
-            # print(listOfFileNames)
-            for i in range(len(listOfFileNames)):
-                zipObject.extract(listOfFileNames[i],path=zip_dir.name)
-        A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]
-        # print("A1 ",A1)
-        verif = A1[0].split('\\')
-        if verif[-1]=='images':
-            path_image_data = A1[0]
-            path_masks_data = A1[1]
+        mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
+        mount_nextcloud('rshare:/data/images', paths.get_images_dir())
+        
+    except Exception as e:
+        print(e)
+        if link_zip_file_images!="None":
+            output_dir_images = tempfile.TemporaryDirectory()
+            output_path_dir_images = output_dir_images.name
+            
+            id_file_images = link_zip_file_images.split('/')[-2]
+            url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
+            output_zip_path = os.path.join(output_path_dir_images,'image_user.zip')
+            print("Loading..")
+            gdown.download(url_images, output_zip_path, quiet=False)
+            # print(">>> output_dir_images",output_dir_images)
+            zip_dir = tempfile.TemporaryDirectory()
+            with ZipFile(output_zip_path,'r') as zipObject:
+                listOfFileNames = zipObject.namelist()
+                # print(listOfFileNames)
+                for i in range(len(listOfFileNames)):
+                    zipObject.extract(listOfFileNames[i],path=zip_dir.name)
+            A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]
+            # print("A1 ",A1)
+            verif = A1[0].split('\\')
+            if verif[-1]=='images':
+                path_image_data = A1[0]
+                path_masks_data = A1[1]
+            else:
+                path_image_data = A1[1]
+                path_masks_data = A1[0]        
         else:
-            path_image_data = A1[1]
-            path_masks_data = A1[0]        
-    else:
-        path_image_data = cfg.DATA_IMAGE
-        path_masks_data = cfg.DATA_MASK
+            path_image_data = cfg.DATA_IMAGE
+            path_masks_data = cfg.DATA_MASK
 
     # Model zip
     output_dir_model = tempfile.TemporaryDirectory()

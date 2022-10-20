@@ -15,7 +15,7 @@ flaat>=0.5.1
 numpy
 tensorflow
 focal_loss
-scikit-image
+scikit-image>=0.18.3
 sklearn
 h5py
 imshowpair

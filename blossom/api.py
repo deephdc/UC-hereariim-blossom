@@ -494,18 +494,16 @@ def train(**args):
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)
         print('==--')
-        #on écarte les images avec un seul label
+        # on écarte les images avec un seul label
         for x,y in zip(img1_list,img2_list):
             sz1_x,sz2_x,sz3_x = x.shape
             sz1_y,sz2_y,sz3_y = y.shape
-            print(sz1_x,sz2_x,sz3_x,x.shape)
-            print(sz1_y,sz2_y,sz3_y,y.shape)
             print('===-')
-            #masque
+            # masque
             gray_file = rgb2gray(y)
             print(">>",gray_file)
-            print('o--')
-            threshold = filters.threshold_otsu(gray_file)
+
+            threshold = threshold_otsu(gray_file)
             print(">>",threshold)
             print('oo-')
             binary_file = (gray_file > threshold)

@@ -502,7 +502,8 @@ def train(**args):
             # masque
             gray_file = rgb2gray(y)
             print(">>",gray_file)
-
+            print(threshold_otsu)
+            print(">>==")
             threshold = threshold_otsu(gray_file)
             print(">>",threshold)
             print('oo-')

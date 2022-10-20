@@ -749,7 +749,7 @@ def train(**args):
 
     output["dice value (retrain model)"] = dice_retrain
     output["dice value (exist model)"] = dice_exist
-    if dice_retrain < dice_exist:
+    if dice_retrain <= dice_exist:
         output["retrain model"] = "worse"
     else:
         output["retrain model"] = "better"
@@ -774,7 +774,7 @@ def train(**args):
             gfile = drive.CreateFile({'parents': [{'id': id_output_folder}]})
             gfile.SetContentFile(iy)
             gfile.Upload() # Upload the file.
-        
+    print("-x-")
     return output
 
 def get_mosaic_predict(img):

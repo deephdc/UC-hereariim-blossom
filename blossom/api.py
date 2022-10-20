@@ -487,6 +487,8 @@ def train(**args):
 
         img1 = imread(files_image)[:,:,:3]
         img2 = imread(files_mask)[:,:,:3]
+        print(img1.shape)
+        print(img2.shape)
         print('=---')
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)

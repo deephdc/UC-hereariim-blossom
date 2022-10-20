@@ -415,20 +415,12 @@ def train(**args):
     ct=0
     cp=0
     CP = []
-    print("path_image_data",len(os.listdir(path_image_data)))
-    print("masks_set",len(os.listdir(path_masks_data)))
-    print(">",path_image_data,images_set[0])
-    print("images_set file 1",os.path.isfile(path_image_data+'/'+images_set[0]))
+    
     for x,y in tqdm(zip(images_set,masks_set),total = len(images_set), desc ="Processing"):
         # sample_image_train = imread(cfg.DATA_IMAGE+'\\'+x)[:,:,:3]
         # sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]
-        print(f"fichier image {x} :",os.path.isfile(os.join.path(path_image_data,x)))
-        print(f"fichier mask {y} :",os.path.isfile(os.join.path(path_masks_data,y)))
-        print("image",os.join.path(path_image_data,x))
-        sample_image_train = imread(os.join.path(path_image_data,x))[:,:,:3]
-        print("size image",sample_image_train.shape)
-        sample_maque_train = imread(os.join.path(path_masks_data,y))[:,:,:3]
-        print("size mask",sample_maque_train.shape)
+        sample_image_train = imread(path_image_data+'/'+x)[:,:,:3]
+        sample_maque_train = imread(path_masks_data+'/'+y)[:,:,:3]
         if sample_image_train.shape[0]==sample_maque_train.shape[0] and sample_image_train.shape[1]==sample_maque_train.shape[1]:
             train_list.append(x)
             masks_list.append(y)
@@ -483,37 +475,43 @@ def train(**args):
     X_train_list = []
     y_train_list = []
 
-    X_train_image = [path_image_data+'\\'+files for files in X_train] #X_train <- images
+    X_train_image = [path_image_data+'/'+files for files in X_train] #X_train <- images
 
-    Y_train_masks = [path_masks_data+'\\'+files for files in y_train] #Y_train <- masks
+    Y_train_masks = [path_masks_data+'/'+files for files in y_train] #Y_train <- masks
 
-    X_test_images = [path_image_data+'\\'+files for files in X_test] #X_test <- images
+    X_test_images = [path_image_data+'/'+files for files in X_test] #X_test <- images
 
-    y_test_masks = [path_masks_data+'\\'+files for files in y_test] #Y_test <- masks
+    y_test_masks = [path_masks_data+'/'+files for files in y_test] #Y_test <- masks
 
     for files_image,files_mask in tqdm(zip(X_train_image,Y_train_masks),total = len(X_train_image), desc ="Train processing"):
 
         img1 = imread(files_image)[:,:,:3]
         img2 = imread(files_mask)[:,:,:3]
- 
+        print(img1.shape)
+        print(img2.shape)
+        print('=---')
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)
-
+        print('==--')
         #on écarte les images avec un seul label
         for x,y in zip(img1_list,img2_list):
             sz1_x,sz2_x,sz3_x = x.shape
             sz1_y,sz2_y,sz3_y = y.shape
-
+            print('===-')
             #masque
             gray_file = rgb2gray(y)
+            print('o--')
             threshold = threshold_otsu(gray_file)
+            print('oo-')
             binary_file = (gray_file > threshold)
+            print('ooo')
             mask_ = np.expand_dims(binary_file, axis=-1)
-
+            print('====')
             L = dict(Counter(list(mask_.flatten())))
             if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
                 X_train_list.append(x)
                 y_train_list.append(mask_)
+            print('xxxx')
 
     print("Total image train for training step :")
     print("x_train :",len(X_train_list))

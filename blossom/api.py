@@ -68,7 +68,7 @@ from pathlib import Path
 
 import subprocess
 from multiprocessing import Process
-import skimage
+
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
@@ -144,6 +144,13 @@ def launch_tensorboard(logdir, port=6006):
     )
     p = Process(target=launch_cmd, args=(logdir, port), daemon=True)
     p.start()
+    
+# try:
+#     mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
+#     mount_nextcloud('rshare:/data/images', paths.get_images_dir())
+#     #mount_nextcloud('rshare:/models', paths.get_models_dir())
+# except Exception as e:
+#     print(e)
 
 def conv2d_block(input_tensor, n_filters, kernel_size=3):
     # first layer
@@ -323,34 +330,42 @@ def train(**args):
     link_zip_file_images = yaml.safe_load(args["Link_images"])    
     # Images zip
     print("link_zip_file_images ",link_zip_file_images)
-    if link_zip_file_images!="None":
-        output_dir_images = tempfile.TemporaryDirectory()
-        output_path_dir_images = output_dir_images.name
+    
+    try:
         
-        id_file_images = link_zip_file_images.split('/')[-2]
-        url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
-        output_zip_path = os.path.join(output_path_dir_images,'image_user.zip')
-        print("Loading..")
-        gdown.download(url_images, output_zip_path, quiet=False)
-        # print(">>> output_dir_images",output_dir_images)
-        zip_dir = tempfile.TemporaryDirectory()
-        with ZipFile(output_zip_path,'r') as zipObject:
-            listOfFileNames = zipObject.namelist()
-            # print(listOfFileNames)
-            for i in range(len(listOfFileNames)):
-                zipObject.extract(listOfFileNames[i],path=zip_dir.name)
-        A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]
-        # print("A1 ",A1)
-        verif = A1[0].split('\\')
-        if verif[-1]=='images':
-            path_image_data = A1[0]
-            path_masks_data = A1[1]
+        mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
+        mount_nextcloud('rshare:/data/images', paths.get_images_dir())
+        
+    except Exception as e:
+        print(e)
+        if link_zip_file_images!="None":
+            output_dir_images = tempfile.TemporaryDirectory()
+            output_path_dir_images = output_dir_images.name
+            
+            id_file_images = link_zip_file_images.split('/')[-2]
+            url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
+            output_zip_path = os.path.join(output_path_dir_images,'image_user.zip')
+            print("Loading..")
+            gdown.download(url_images, output_zip_path, quiet=False)
+            # print(">>> output_dir_images",output_dir_images)
+            zip_dir = tempfile.TemporaryDirectory()
+            with ZipFile(output_zip_path,'r') as zipObject:
+                listOfFileNames = zipObject.namelist()
+                # print(listOfFileNames)
+                for i in range(len(listOfFileNames)):
+                    zipObject.extract(listOfFileNames[i],path=zip_dir.name)
+            A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]
+            # print("A1 ",A1)
+            verif = A1[0].split('\\')
+            if verif[-1]=='images':
+                path_image_data = A1[0]
+                path_masks_data = A1[1]
+            else:
+                path_image_data = A1[1]
+                path_masks_data = A1[0]        
         else:
-            path_image_data = A1[1]
-            path_masks_data = A1[0]        
-    else:
-        path_image_data = cfg.DATA_IMAGE
-        path_masks_data = cfg.DATA_MASK
+            path_image_data = cfg.DATA_IMAGE
+            path_masks_data = cfg.DATA_MASK
 
     # Model zip
     output_dir_model = tempfile.TemporaryDirectory()
@@ -496,19 +511,18 @@ def train(**args):
             sz1_y,sz2_y,sz3_y = y.shape
             # masque
             gray_file = rgb2gray(y)
-            print(skimage.__version__)
-            threshold = threshold_otsu(gray_file)
-            print(">>",threshold)
-            print('oo-')
+
+            if len(Counter(gray_file.flatten()).keys())!=1:            
+                threshold = threshold_otsu(gray_file) #scikit-image 0.17.8 gray_file must have more than one value in matrix
+            else:
+                threshold = list(Counter(gray_file.flatten()).keys())[0]
             binary_file = (gray_file > threshold)
-            print('ooo')
             mask_ = np.expand_dims(binary_file, axis=-1)
-            print('====')
             L = dict(Counter(list(mask_.flatten())))
             if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
                 X_train_list.append(x)
                 y_train_list.append(mask_)
-            print('xxxx')
+
 
     print("Total image train for training step :")
     print("x_train :",len(X_train_list))
@@ -535,7 +549,11 @@ def train(**args):
 
             #masque
             gray_file = rgb2gray(y)
-            threshold = threshold_otsu(gray_file)
+            
+            if len(Counter(gray_file.flatten()).keys())!=1:            
+                threshold = threshold_otsu(gray_file) #scikit-image 0.17.8 gray_file must have more than one value in matrix
+            else:
+                threshold = list(Counter(gray_file.flatten()).keys())[0]
             binary_file = (gray_file > threshold)
             mask_ = np.expand_dims(binary_file, axis=-1)
 
@@ -551,14 +569,14 @@ def train(**args):
     taille_p = 256
     X_train_ensemble = np.zeros((len(X_train_list), taille_p, taille_p, 3), dtype=np.uint8)
     y_train_ensemble = np.zeros((len(y_train_list), taille_p, taille_p, 1), dtype=np.bool)
-    print(":::::")
+
     for n,m in zip(range(len(X_train_list)),range(len(y_train_list))):
         X_train_ensemble[n]=X_train_list[n]
         y_train_ensemble[m]=y_train_list[m]
 
     X_test_ensemble = np.zeros((len(X_test_list), taille_p, taille_p, 3), dtype=np.uint8)
     y_test_ensemble = np.zeros((len(y_test_list), taille_p, taille_p, 1), dtype=np.bool)
-    print(":::::")
+
     for n,m in zip(range(len(X_test_list)),range(len(y_test_list))):
         X_test_ensemble[n]=X_test_list[n]
         y_test_ensemble[m]=y_test_list[m]
@@ -617,6 +635,10 @@ def train(**args):
         checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True,
         save_weights_only=False, mode='auto') #Callback to save the Keras model or model weights at some frequency.
     print("training steps")
+    print("total x_train :",x_train)
+    print("total y_train :",y_train)
+    print("total x_val :",x_val)
+    print("total y_val :",y_val)
     results = model.fit(x_train,y_train,
                     validation_data=(x_val,y_val),
                     epochs=epoch_user, batch_size = batch_size_user,
@@ -751,7 +773,7 @@ def train(**args):
 
     output["dice value (retrain model)"] = dice_retrain
     output["dice value (exist model)"] = dice_exist
-    if dice_retrain < dice_exist:
+    if dice_retrain <= dice_exist:
         output["retrain model"] = "worse"
     else:
         output["retrain model"] = "better"
@@ -776,7 +798,7 @@ def train(**args):
             gfile = drive.CreateFile({'parents': [{'id': id_output_folder}]})
             gfile.SetContentFile(iy)
             gfile.Upload() # Upload the file.
-        
+    print("-x-")
     return output
 
 def get_mosaic_predict(img):

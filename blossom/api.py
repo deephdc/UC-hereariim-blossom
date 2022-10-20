@@ -418,6 +418,7 @@ def train(**args):
     for x,y in tqdm(zip(images_set,masks_set),total = len(images_set), desc ="Processing"):
         # sample_image_train = imread(cfg.DATA_IMAGE+'\\'+x)[:,:,:3]
         # sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]
+        print("image",path_image_data+'\\'+x)
         sample_image_train = imread(path_image_data+'\\'+x)[:,:,:3]
         sample_maque_train = imread(path_masks_data+'\\'+y)[:,:,:3]
         if sample_image_train.shape[0]==sample_maque_train.shape[0] and sample_image_train.shape[1]==sample_maque_train.shape[1]:
@@ -482,7 +483,7 @@ def train(**args):
 
     y_test_masks = [path_masks_data+'\\'+files for files in y_test] #Y_test <- masks
 
-    for files_image,files_mask in tqdm(zip(X_train_image,Y_train_masks),total = len(X_train_image), desc ="Processing"):
+    for files_image,files_mask in tqdm(zip(X_train_image,Y_train_masks),total = len(X_train_image), desc ="Train processing"):
 
         img1 = imread(files_image)[:,:,:3]
         img2 = imread(files_mask)[:,:,:3]
@@ -518,7 +519,7 @@ def train(**args):
     X_test_list = []
     y_test_list = []
 
-    for files_image,files_mask in tqdm(zip(X_test_images,y_test_masks),total = len(X_test_images), desc ="Processing"):
+    for files_image,files_mask in tqdm(zip(X_test_images,y_test_masks),total = len(X_test_images), desc ="Test processing"):
         img1 = imread(files_image)[:,:,:3]
         img2 = imread(files_mask)[:,:,:3]
         img1_list = get_mosaic(img1)

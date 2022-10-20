@@ -496,20 +496,20 @@ def train(**args):
             sz1_y,sz2_y,sz3_y = y.shape
             # masque
             gray_file = rgb2gray(y)
-            print(skimage.__version__)
-            print(help(threshold_otsu))
-            threshold = threshold_otsu(gray_file)
-            print(">>",threshold)
-            print('oo-')
-            binary_file = (gray_file > threshold)
-            print('ooo')
-            mask_ = np.expand_dims(binary_file, axis=-1)
-            print('====')
-            L = dict(Counter(list(mask_.flatten())))
-            if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
-                X_train_list.append(x)
-                y_train_list.append(mask_)
-            print('xxxx')
+
+            if len(Counter(gray_file.flatten()).keys())!=1:            
+                threshold = threshold_otsu(gray_file)
+                print(">>",threshold)
+                print('oo-')
+                binary_file = (gray_file > threshold)
+                print('ooo')
+                mask_ = np.expand_dims(binary_file, axis=-1)
+                print('====')
+                L = dict(Counter(list(mask_.flatten())))
+                if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
+                    X_train_list.append(x)
+                    y_train_list.append(mask_)
+                print('xxxx')
 
     print("Total image train for training step :")
     print("x_train :",len(X_train_list))

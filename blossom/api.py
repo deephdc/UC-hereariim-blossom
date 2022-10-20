@@ -497,6 +497,7 @@ def train(**args):
             # masque
             gray_file = rgb2gray(y)
             print(skimage.__version__)
+            print(help(threshold_otsu))
             threshold = threshold_otsu(gray_file)
             print(">>",threshold)
             print('oo-')

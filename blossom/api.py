@@ -421,6 +421,9 @@ def train(**args):
 
     images_set = list(image_.keys())
     masks_set = list(masks_.keys())
+    
+    images_set.sort()
+    masks_set.sort()
 
     print("Train :",len(images_set),len(masks_set))
 
@@ -437,9 +440,7 @@ def train(**args):
         sample_image_train = imread(path_image_data+'/'+x)[:,:,:3]
         sample_maque_train = imread(path_masks_data+'/'+y)[:,:,:3]
         print(x)
-        print(sample_image_train.shape)
         print(y)
-        print(sample_maque_train.shape)
         if sample_image_train.shape[0]==sample_maque_train.shape[0] and sample_image_train.shape[1]==sample_maque_train.shape[1]:
             train_list.append(x)
             masks_list.append(y)

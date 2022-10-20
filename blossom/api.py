@@ -439,8 +439,6 @@ def train(**args):
         # sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]
         sample_image_train = imread(path_image_data+'/'+x)[:,:,:3]
         sample_maque_train = imread(path_masks_data+'/'+y)[:,:,:3]
-        print(x)
-        print(y)
         if sample_image_train.shape[0]==sample_maque_train.shape[0] and sample_image_train.shape[1]==sample_maque_train.shape[1]:
             train_list.append(x)
             masks_list.append(y)

@@ -415,7 +415,7 @@ def train(**args):
     ct=0
     cp=0
     CP = []
-    for x,y in zip(images_set,masks_set):
+    for x,y in tqdm(zip(images_set,masks_set),total = len(images_set), desc ="Processing"):
         # sample_image_train = imread(cfg.DATA_IMAGE+'\\'+x)[:,:,:3]
         # sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]
         sample_image_train = imread(path_image_data+'\\'+x)[:,:,:3]

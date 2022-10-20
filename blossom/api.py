@@ -422,12 +422,11 @@ def train(**args):
     for x,y in tqdm(zip(images_set,masks_set),total = len(images_set), desc ="Processing"):
         # sample_image_train = imread(cfg.DATA_IMAGE+'\\'+x)[:,:,:3]
         # sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]
-        print(f"fichier image {x} :",os.path.isfile(os.join.path(path_image_data,x)))
-        print(f"fichier mask {y} :",os.path.isfile(os.join.path(path_masks_data,y)))
-        print("image",os.join.path(path_image_data,x))
-        sample_image_train = imread(os.join.path(path_image_data,x))[:,:,:3]
+        print(f"fichier image {x} :",os.path.isfile(path_image_data+'/'+x))
+        print(f"fichier mask {y} :",os.path.isfile(path_masks_data+'/'+y))
+        sample_image_train = imread(path_image_data+'/'+x)[:,:,:3]
         print("size image",sample_image_train.shape)
-        sample_maque_train = imread(os.join.path(path_masks_data,y))[:,:,:3]
+        sample_maque_train = imread(path_masks_data+'/'+y)[:,:,:3]
         print("size mask",sample_maque_train.shape)
         if sample_image_train.shape[0]==sample_maque_train.shape[0] and sample_image_train.shape[1]==sample_maque_train.shape[1]:
             train_list.append(x)

@@ -736,10 +736,10 @@ def train(**args):
     for ix in range(len(X_test_ensemble)):
         a = y_test_ensemble[ix, :, :, 0]
         b = preds_test_opt[ix, :, :, 0]
-    for i in range(256):
-        for j in range(256):
-            PIXEL_TEST.append(int(a[i][j]))
-            PIXEL_PRED.append(int(b[i][j]))
+        for i in range(256):
+            for j in range(256):
+                PIXEL_TEST.append(int(a[i][j]))
+                PIXEL_PRED.append(int(b[i][j]))
 
     Y_t = keras.backend.constant(PIXEL_TEST)
     pred_t = keras.backend.constant(PIXEL_PRED)
@@ -778,10 +778,10 @@ def train(**args):
     for ix in range(len(X_test_ensemble)):
         a = y_test_ensemble[ix, :, :, 0]
         b = preds_test_opt[ix, :, :, 0]
-    for i in range(256):
-        for j in range(256):
-            PIXEL_TEST.append(int(a[i][j]))
-            PIXEL_PRED.append(int(b[i][j]))
+        for i in range(256):
+            for j in range(256):
+                PIXEL_TEST.append(int(a[i][j]))
+                PIXEL_PRED.append(int(b[i][j]))
 
     Y_t = keras.backend.constant(PIXEL_TEST)
     pred_t = keras.backend.constant(PIXEL_PRED)

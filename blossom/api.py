@@ -5,6 +5,7 @@ import tempfile
 from marshmallow import missing
 import yaml
 from webargs import fields
+from datetime import datetime
 
 #127.0.0.1
 
@@ -59,7 +60,7 @@ from tensorflow.keras.layers import BatchNormalization, Activation, Dense, Dropo
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import Sequential
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.python.keras.callbacks import TensorBoard
 import tensorflow as tf
 import os
 import gdown
@@ -100,7 +101,6 @@ def _fields_to_dict(fields_in):
         dict_out[k] = param
 
     return dict_out
-
 
 def mount_nextcloud(frompath, topath):
     """
@@ -332,10 +332,10 @@ def train(**args):
     print("link_zip_file_images ",link_zip_file_images)
     
     try:
-        zip_dir = tempfile.TemporaryDirectory()
+        image_dir = tempfile.TemporaryDirectory()
         # mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
-        mount_nextcloud('rshare:/data/images', os.path.join(zip_dir.name,'images'))
-        print(">> RSHARE",os.listdir(os.path.join(zip_dir.name,'images')))        
+        mount_nextcloud('rshare:/data/images', os.path.join(image_dir.name,'images'))
+        print(">> RSHARE",os.listdir(os.path.join(image_dir.name,'images')))        
     except Exception as e:
         print(e)
         if link_zip_file_images!="None":
@@ -660,10 +660,17 @@ def train(**args):
     print("total y_train :",len(y_train))
     print("total x_val :",len(x_val))
     print("total y_val :",len(y_val))
+
+    CONF = cfg.conf_dict
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+    print("time :",timestamp)
+
+    tensorboad = TensorBoard(log_dir=paths.get_logs_dir())
+
     results = model.fit(x_train,y_train,
                     validation_data=(x_val,y_val),
                     epochs=epoch_user, batch_size = batch_size_user,
-                    callbacks=[early_stop,Model_check])
+                    callbacks=[early_stop,Model_check,tensorboad])
 
 
     # BEST RETRAIN MODEL

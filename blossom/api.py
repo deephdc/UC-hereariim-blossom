@@ -805,8 +805,11 @@ def train(**args):
     
     x = input('Do you want weight and model ? [Y/n]')
     if x=="" or x=='Y':
-        gauth = GoogleAuth()           
+        print("GoogleAuth ...")
+        gauth = GoogleAuth()     
+        print("GoogleAuth done")      
         drive = GoogleDrive(gauth)  
+        print("Connected")  
 
         A = os.listdir(output_zip_model_opt_thr_path_dir) #contient seulement et uniquement des fichiers !!!
         # print(os.listdir(path_folder_to_image)) 

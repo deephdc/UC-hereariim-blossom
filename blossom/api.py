@@ -332,10 +332,10 @@ def train(**args):
     print("link_zip_file_images ",link_zip_file_images)
     
     try:
-        
-        mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
-        mount_nextcloud('rshare:/data/images', paths.get_images_dir())
-        
+        zip_dir = tempfile.TemporaryDirectory()
+        # mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
+        mount_nextcloud('rshare:/data/images', os.path.join(zip_dir.name,'images'))
+        print(">> RSHARE",os.listdir(os.path.join(zip_dir.name,'images')))        
     except Exception as e:
         print(e)
         if link_zip_file_images!="None":

@@ -532,8 +532,8 @@ def train(**args):
                 mask_ = np.expand_dims(y, axis=-1)
                 L = dict(Counter(list(y.flatten())))
                 if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (y_shape[0],y_shape[1])==(256,256):
-                    X_train_list.append(mask_)
-                    y_train_list.append(y)
+                    X_train_list.append(x)
+                    y_train_list.append(mask_)
                 
 
 
@@ -580,8 +580,8 @@ def train(**args):
                 L = dict(Counter(list(y.flatten())))
                 mask_ = np.expand_dims(y, axis=-1)
                 if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (y_shape[0],y_shape[1])==(256,256):
-                    X_test_list.append(mask_)
-                    y_test_list.append(y)
+                    X_test_list.append(x)
+                    y_test_list.append(mask_)
 
     print("Total image test pour test step :")
     print("x_test :",len(X_test_list))

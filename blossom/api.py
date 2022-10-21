@@ -508,7 +508,7 @@ def train(**args):
     for files_image,files_mask in tqdm(zip(X_train_image,Y_train_masks),total = len(X_train_image), desc ="Train processing"):
 
         img1 = imread(files_image)[:,:,:3]
-        img2 = imread(files_mask)[:,:,:3]
+        img2 = imread(files_mask)
 
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)
@@ -553,7 +553,7 @@ def train(**args):
 
     for files_image,files_mask in tqdm(zip(X_test_images,y_test_masks),total = len(X_test_images), desc ="Test processing"):
         img1 = imread(files_image)[:,:,:3]
-        img2 = imread(files_mask)[:,:,:3]
+        img2 = imread(files_mask)
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)
 

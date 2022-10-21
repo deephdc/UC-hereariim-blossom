@@ -592,6 +592,7 @@ def train(**args):
     for n,m in zip(range(len(X_train_list)),range(len(y_train_list))):
         X_train_ensemble[n]=X_train_list[n]
         y_train_ensemble[m]=y_train_list[m]
+        print("ref")
 
     X_test_ensemble = np.zeros((len(X_test_list), taille_p, taille_p, 3), dtype=np.uint8)
     y_test_ensemble = np.zeros((len(y_test_list), taille_p, taille_p, 1), dtype=np.bool)

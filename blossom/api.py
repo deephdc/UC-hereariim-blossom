@@ -578,8 +578,8 @@ def train(**args):
             else:
                 L = dict(Counter(list(y.flatten())))
                 if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (y_shape[0],y_shape[1])==(256,256):
-                    X_train_list.append(x)
-                    y_train_list.append(y)
+                    X_test_list.append(x)
+                    y_test_list.append(y)
 
     print("Total image test pour test step :")
     print("x_test :",len(X_test_list))

@@ -354,7 +354,7 @@ def train(**args):
                 # print(listOfFileNames)
                 for i in range(len(listOfFileNames)):
                     zipObject.extract(listOfFileNames[i],path=zip_dir.name)
-            A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]
+            A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]            
             # print("A1 ",A1)
             verif = A1[0].split('\\')
             if verif[-1]=='images':
@@ -434,11 +434,15 @@ def train(**args):
     cp=0
     CP = []
     
+    print(os.listdir(path_image_data))
+    print(os.listdir(path_masks_data))
+    
     for x,y in tqdm(zip(images_set,masks_set),total = len(images_set), desc ="Processing"):
         # sample_image_train = imread(cfg.DATA_IMAGE+'\\'+x)[:,:,:3]
-        # sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]
-        sample_image_train = imread(path_image_data+'/'+x)[:,:,:3]
-        sample_maque_train = imread(path_masks_data+'/'+y)[:,:,:3]
+        # sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]        
+        sample_image_train = imread(path_image_data+'/'+x)[:,:,:3]        
+        sample_maque_train = imread(path_masks_data+'/'+y)
+        
         if sample_image_train.shape[0]==sample_maque_train.shape[0] and sample_image_train.shape[1]==sample_maque_train.shape[1]:
             train_list.append(x)
             masks_list.append(y)
@@ -511,20 +515,28 @@ def train(**args):
         # on écarte les images avec un seul label
         for x,y in zip(img1_list,img2_list):
             sz1_x,sz2_x,sz3_x = x.shape
-            sz1_y,sz2_y,sz3_y = y.shape
-            # masque
-            gray_file = rgb2gray(y)
+            y_shape = y.shape
+            if len(y_shape)==3:
+                sz1_y,sz2_y,sz3_y = y.shape
+                # masque
+                gray_file = rgb2gray(y)
 
-            if len(Counter(gray_file.flatten()).keys())!=1:            
-                threshold = threshold_otsu(gray_file) #scikit-image 0.17.8 gray_file must have more than one value in matrix
+                if len(Counter(gray_file.flatten()).keys())!=1:            
+                    threshold = threshold_otsu(gray_file) #scikit-image 0.17.8 gray_file must have more than one value in matrix
+                else:
+                    threshold = list(Counter(gray_file.flatten()).keys())[0]
+                binary_file = (gray_file > threshold)
+                mask_ = np.expand_dims(binary_file, axis=-1)
+                L = dict(Counter(list(mask_.flatten())))
+                if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
+                    X_train_list.append(x)
+                    y_train_list.append(mask_)
             else:
-                threshold = list(Counter(gray_file.flatten()).keys())[0]
-            binary_file = (gray_file > threshold)
-            mask_ = np.expand_dims(binary_file, axis=-1)
-            L = dict(Counter(list(mask_.flatten())))
-            if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
-                X_train_list.append(x)
-                y_train_list.append(mask_)
+                L = dict(Counter(list(y.flatten())))
+                if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (y_shape[0],y_shape[1])==(256,256):
+                    X_train_list.append(x)
+                    y_train_list.append(y)
+                
 
 
     print("Total image train for training step :")
@@ -548,22 +560,29 @@ def train(**args):
         #on écarte les images avec un seul label
         for x,y in zip(img1_list,img2_list):
             sz1_x,sz2_x,sz3_x = x.shape
-            sz1_y,sz2_y,sz3_y = y.shape
+            y_shape = y.shape
+            if len(y_shape)==3:
+                sz1_y,sz2_y,sz3_y = y.shape
 
-            #masque
-            gray_file = rgb2gray(y)
-            
-            if len(Counter(gray_file.flatten()).keys())!=1:            
-                threshold = threshold_otsu(gray_file) #scikit-image 0.17.8 gray_file must have more than one value in matrix
+                #masque
+                gray_file = rgb2gray(y)
+                
+                if len(Counter(gray_file.flatten()).keys())!=1:            
+                    threshold = threshold_otsu(gray_file) #scikit-image 0.17.8 gray_file must have more than one value in matrix
+                else:
+                    threshold = list(Counter(gray_file.flatten()).keys())[0]
+                binary_file = (gray_file > threshold)
+                mask_ = np.expand_dims(binary_file, axis=-1)
+
+                L = dict(Counter(list(mask_.flatten())))
+                if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
+                    X_test_list.append(x)
+                    y_test_list.append(mask_)
             else:
-                threshold = list(Counter(gray_file.flatten()).keys())[0]
-            binary_file = (gray_file > threshold)
-            mask_ = np.expand_dims(binary_file, axis=-1)
-
-            L = dict(Counter(list(mask_.flatten())))
-            if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (sz1_y,sz2_y)==(256,256):
-                X_test_list.append(x)
-                y_test_list.append(mask_)
+                L = dict(Counter(list(y.flatten())))
+                if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (y_shape[0],y_shape[1])==(256,256):
+                    X_train_list.append(x)
+                    y_train_list.append(y)
 
     print("Total image test pour test step :")
     print("x_test :",len(X_test_list))

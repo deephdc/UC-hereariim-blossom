@@ -803,8 +803,9 @@ def train(**args):
     
     print(output)
     
-    x = input('Do you want weight and model ? [Y/n]')
-    if x=="" or x=='Y':
+    print("QUALITY OF RETRAIN MODEL :",output["retrain model"])
+    if output["retrain model"]=="better":
+        print("Downloading elements...")
         print("GoogleAuth ...")
         gauth = GoogleAuth()     
         print("GoogleAuth done")      
@@ -821,7 +822,7 @@ def train(**args):
             gfile = drive.CreateFile({'parents': [{'id': id_output_folder}]})
             gfile.SetContentFile(iy)
             gfile.Upload() # Upload the file.
-    print("-x-")
+    print("Shutdown")
     return output
 
 def get_mosaic_predict(img):

@@ -355,6 +355,7 @@ def train(**args):
                 for i in range(len(listOfFileNames)):
                     zipObject.extract(listOfFileNames[i],path=zip_dir.name)
             A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]
+            print(A1)
             # print("A1 ",A1)
             verif = A1[0].split('\\')
             if verif[-1]=='images':

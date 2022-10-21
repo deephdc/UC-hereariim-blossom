@@ -434,9 +434,6 @@ def train(**args):
     cp=0
     CP = []
     
-    print(os.listdir(path_image_data))
-    print(os.listdir(path_masks_data))
-    
     for x,y in tqdm(zip(images_set,masks_set),total = len(images_set), desc ="Processing"):
         # sample_image_train = imread(cfg.DATA_IMAGE+'\\'+x)[:,:,:3]
         # sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]        
@@ -463,7 +460,7 @@ def train(**args):
 
     def get_mosaic(img,train=True):
         A = []
-        if train:
+        if len(img.shape)==3:
             h,l,z = img.shape
         else:
             h,l = img.shape

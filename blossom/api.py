@@ -532,8 +532,8 @@ def train(**args):
                 mask_ = np.expand_dims(y, axis=-1)
                 L = dict(Counter(list(y.flatten())))
                 if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (y_shape[0],y_shape[1])==(256,256):
-                    X_train_list.append(mask_)
-                    y_train_list.append(y)
+                    X_train_list.append(x)
+                    y_train_list.append(mask_)
                 
 
 
@@ -580,8 +580,8 @@ def train(**args):
                 L = dict(Counter(list(y.flatten())))
                 mask_ = np.expand_dims(y, axis=-1)
                 if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (y_shape[0],y_shape[1])==(256,256):
-                    X_test_list.append(mask_)
-                    y_test_list.append(y)
+                    X_test_list.append(x)
+                    y_test_list.append(mask_)
 
     print("Total image test pour test step :")
     print("x_test :",len(X_test_list))
@@ -736,10 +736,10 @@ def train(**args):
     for ix in range(len(X_test_ensemble)):
         a = y_test_ensemble[ix, :, :, 0]
         b = preds_test_opt[ix, :, :, 0]
-    for i in range(256):
-        for j in range(256):
-            PIXEL_TEST.append(int(a[i][j]))
-            PIXEL_PRED.append(int(b[i][j]))
+        for i in range(256):
+            for j in range(256):
+                PIXEL_TEST.append(int(a[i][j]))
+                PIXEL_PRED.append(int(b[i][j]))
 
     Y_t = keras.backend.constant(PIXEL_TEST)
     pred_t = keras.backend.constant(PIXEL_PRED)
@@ -778,10 +778,10 @@ def train(**args):
     for ix in range(len(X_test_ensemble)):
         a = y_test_ensemble[ix, :, :, 0]
         b = preds_test_opt[ix, :, :, 0]
-    for i in range(256):
-        for j in range(256):
-            PIXEL_TEST.append(int(a[i][j]))
-            PIXEL_PRED.append(int(b[i][j]))
+        for i in range(256):
+            for j in range(256):
+                PIXEL_TEST.append(int(a[i][j]))
+                PIXEL_PRED.append(int(b[i][j]))
 
     Y_t = keras.backend.constant(PIXEL_TEST)
     pred_t = keras.backend.constant(PIXEL_PRED)
@@ -805,8 +805,11 @@ def train(**args):
     
     x = input('Do you want weight and model ? [Y/n]')
     if x=="" or x=='Y':
-        gauth = GoogleAuth()           
+        print("GoogleAuth ...")
+        gauth = GoogleAuth()     
+        print("GoogleAuth done")      
         drive = GoogleDrive(gauth)  
+        print("Connected")  
 
         A = os.listdir(output_zip_model_opt_thr_path_dir) #contient seulement et uniquement des fichiers !!!
         # print(os.listdir(path_folder_to_image)) 

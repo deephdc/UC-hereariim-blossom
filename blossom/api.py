@@ -434,9 +434,6 @@ def train(**args):
     cp=0
     CP = []
     
-    print(os.listdir(path_image_data))
-    print(os.listdir(path_masks_data))
-    
     for x,y in tqdm(zip(images_set,masks_set),total = len(images_set), desc ="Processing"):
         # sample_image_train = imread(cfg.DATA_IMAGE+'\\'+x)[:,:,:3]
         # sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]        
@@ -463,7 +460,7 @@ def train(**args):
 
     def get_mosaic(img,train=True):
         A = []
-        if train:
+        if len(img.shape)==3:
             h,l,z = img.shape
         else:
             h,l = img.shape
@@ -508,7 +505,7 @@ def train(**args):
     for files_image,files_mask in tqdm(zip(X_train_image,Y_train_masks),total = len(X_train_image), desc ="Train processing"):
 
         img1 = imread(files_image)[:,:,:3]
-        img2 = imread(files_mask)[:,:,:3]
+        img2 = imread(files_mask)
 
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)
@@ -532,9 +529,10 @@ def train(**args):
                     X_train_list.append(x)
                     y_train_list.append(mask_)
             else:
+                mask_ = np.expand_dims(y, axis=-1)
                 L = dict(Counter(list(y.flatten())))
                 if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (y_shape[0],y_shape[1])==(256,256):
-                    X_train_list.append(x)
+                    X_train_list.append(mask_)
                     y_train_list.append(y)
                 
 
@@ -553,7 +551,7 @@ def train(**args):
 
     for files_image,files_mask in tqdm(zip(X_test_images,y_test_masks),total = len(X_test_images), desc ="Test processing"):
         img1 = imread(files_image)[:,:,:3]
-        img2 = imread(files_mask)[:,:,:3]
+        img2 = imread(files_mask)
         img1_list = get_mosaic(img1)
         img2_list = get_mosaic(img2)
 
@@ -580,9 +578,10 @@ def train(**args):
                     y_test_list.append(mask_)
             else:
                 L = dict(Counter(list(y.flatten())))
+                mask_ = np.expand_dims(y, axis=-1)
                 if len(list(L.keys()))==2 and (sz1_x,sz2_x)==(256,256) and (y_shape[0],y_shape[1])==(256,256):
-                    X_train_list.append(x)
-                    y_train_list.append(y)
+                    X_test_list.append(mask_)
+                    y_test_list.append(y)
 
     print("Total image test pour test step :")
     print("x_test :",len(X_test_list))

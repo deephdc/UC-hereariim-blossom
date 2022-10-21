@@ -437,10 +437,11 @@ def train(**args):
     for x,y in tqdm(zip(images_set,masks_set),total = len(images_set), desc ="Processing"):
         # sample_image_train = imread(cfg.DATA_IMAGE+'\\'+x)[:,:,:3]
         # sample_maque_train = imread(cfg.DATA_MASK+'\\'+y)[:,:,:3]
-        print(path_image_data+'/'+x)
+        
         sample_image_train = imread(path_image_data+'/'+x)[:,:,:3]
-        print("===")
+        print(path_masks_data+'/'+y)
         sample_maque_train = imread(path_masks_data+'/'+y)[:,:,:3]
+        print("===")
         if sample_image_train.shape[0]==sample_maque_train.shape[0] and sample_image_train.shape[1]==sample_maque_train.shape[1]:
             train_list.append(x)
             masks_list.append(y)

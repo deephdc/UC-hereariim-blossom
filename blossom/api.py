@@ -814,8 +814,22 @@ def train(**args):
     if output["retrain model"]=="better":
         print("Downloading elements...")
         print("GoogleAuth ...")
-        gauth = GoogleAuth()     
-        print("GoogleAuth done")      
+        gauth = GoogleAuth()    
+
+        gauth.LoadCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
+        if gauth.credentials is None:
+            print("Authenticate if they're not there")
+            gauth.LocalWebserverAuth()
+        elif gauth.access_token_expired:
+            print("Refresh them if expired")
+            gauth.Refresh()
+        else:
+            print("Initialize the saved creds")
+            gauth.Authorize()
+        print("Save the current credentials to a file")
+        gauth.SaveCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
+
+        print("GoogleAuth done")   
         drive = GoogleDrive(gauth)  
         print("Connected")  
 
@@ -826,9 +840,14 @@ def train(**args):
 
         id_output_folder = "1JMeVNJPrOtK13ZIqE8Q7R5PSqFpHRGFZ"
         for iy in PATH_mask:
+            print(iy)
             gfile = drive.CreateFile({'parents': [{'id': id_output_folder}]})
+            print("1/3",iy)
             gfile.SetContentFile(iy)
+            print("2/3",iy)
             gfile.Upload() # Upload the file.
+            print("3/3",iy)
+        print("done")
     print("Shutdown")
     return output
 

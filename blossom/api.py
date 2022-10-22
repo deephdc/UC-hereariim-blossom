@@ -60,7 +60,7 @@ from tensorflow.keras.layers import BatchNormalization, Activation, Dense, Dropo
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import Sequential
-from tensorflow.python.keras.callbacks import TensorBoard
+# from tensorflow.python.keras.callbacks import TensorBoard
 import tensorflow as tf
 import os
 import gdown
@@ -82,25 +82,25 @@ def _catch_error(f):
             raise web.HTTPBadRequest(reason=e)
     return wrap
 
-def _fields_to_dict(fields_in):
-    """
-    Function to convert marshmallow fields to dict()
-    """
-    dict_out = {}
-    for k, v in fields_in.items():
-        param = {}
-        param["default"] = v.missing
-        param["type"] = type(v.missing)
-        param["required"] = getattr(v, "required", False)
+# def _fields_to_dict(fields_in):
+#     """
+#     Function to convert marshmallow fields to dict()
+#     """
+#     dict_out = {}
+#     for k, v in fields_in.items():
+#         param = {}
+#         param["default"] = v.missing
+#         param["type"] = type(v.missing)
+#         param["required"] = getattr(v, "required", False)
 
-        v_help = v.metadata["description"]
-        if "enum" in v.metadata.keys():
-            v_help = f"{v_help}. Choices: {v.metadata['enum']}"
-        param["help"] = v_help
+#         v_help = v.metadata["description"]
+#         if "enum" in v.metadata.keys():
+#             v_help = f"{v_help}. Choices: {v.metadata['enum']}"
+#         param["help"] = v_help
 
-        dict_out[k] = param
+#         dict_out[k] = param
 
-    return dict_out
+#     return dict_out
 
 def mount_nextcloud(frompath, topath):
     """
@@ -122,28 +122,28 @@ def mount_nextcloud(frompath, topath):
     return output, error
 
 
-def launch_cmd(logdir, port):
-    subprocess.call(["tensorboard",
-                     "--logdir", f"{logdir}",
-                     "--port", f"{port}",
-                     "--host", "0.0.0.0"])
+# def launch_cmd(logdir, port):
+#     subprocess.call(["tensorboard",
+#                      "--logdir", f"{logdir}",
+#                      "--port", f"{port}",
+#                      "--host", "0.0.0.0"])
 
 
-def launch_tensorboard(logdir, port=6006):
-    """
-    Run Tensorboard on a separate Process on behalf of the user
-    Parameters
-    ==========
-    * logdir: str, pathlib.Path
-        Folder path to tensorboard logs.
-    * port: int
-        Port to use for the monitoring webserver.
-    """
-    subprocess.run(
-        ["fuser", "-k", f"{port}/tcp"]  # kill any previous process in that port
-    )
-    p = Process(target=launch_cmd, args=(logdir, port), daemon=True)
-    p.start()
+# def launch_tensorboard(logdir, port=6006):
+#     """
+#     Run Tensorboard on a separate Process on behalf of the user
+#     Parameters
+#     ==========
+#     * logdir: str, pathlib.Path
+#         Folder path to tensorboard logs.
+#     * port: int
+#         Port to use for the monitoring webserver.
+#     """
+#     subprocess.run(
+#         ["fuser", "-k", f"{port}/tcp"]  # kill any previous process in that port
+#     )
+#     p = Process(target=launch_cmd, args=(logdir, port), daemon=True)
+#     p.start()
     
 # try:
 #     mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
@@ -661,16 +661,16 @@ def train(**args):
     print("total x_val :",len(x_val))
     print("total y_val :",len(y_val))
 
-    CONF = cfg.conf_dict
-    timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
-    print("time :",timestamp)
+    # CONF = cfg.conf_dict
+    # timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+    # print("time :",timestamp)
 
-    tensorboad = TensorBoard(log_dir=paths.get_logs_dir())
+    # tensorboad = TensorBoard(log_dir=paths.get_logs_dir())
 
     results = model.fit(x_train,y_train,
                     validation_data=(x_val,y_val),
                     epochs=epoch_user, batch_size = batch_size_user,
-                    callbacks=[early_stop,Model_check,tensorboad])
+                    callbacks=[early_stop,Model_check])
 
 
     # BEST RETRAIN MODEL

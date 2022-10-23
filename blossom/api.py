@@ -846,7 +846,7 @@ def train(**args):
             print("1/3",iy)
             gfile.SetContentFile(iy)
             print("2/3",iy)
-            gfile.Upload() # Upload the file.
+            gfile.Upload() # Upload the file .
             print("3/3",iy)
         print("done")
     print("Shutdown")

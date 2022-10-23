@@ -812,6 +812,12 @@ def train(**args):
     
     print("QUALITY OF RETRAIN MODEL :",output["retrain model"])
     if output["retrain model"]=="better":
+
+        A = os.listdir(output_zip_model_opt_thr_path_dir) #contient seulement et uniquement des fichiers !!!
+        # print(os.listdir(path_folder_to_image)) 
+        PATH_mask = [os.path.join(output_zip_model_opt_thr_path_dir,ix) for ix in A]
+        print(PATH_mask)
+
         print("Downloading elements...")
         print("GoogleAuth ...")
         gauth = GoogleAuth()    
@@ -831,12 +837,7 @@ def train(**args):
 
         print("GoogleAuth done")   
         drive = GoogleDrive(gauth)  
-        print("Connected")  
-
-        A = os.listdir(output_zip_model_opt_thr_path_dir) #contient seulement et uniquement des fichiers !!!
-        # print(os.listdir(path_folder_to_image)) 
-        PATH_mask = [os.path.join(output_zip_model_opt_thr_path_dir,ix) for ix in A]
-        print(PATH_mask)
+        print("Connected")
 
         id_output_folder = "1JMeVNJPrOtK13ZIqE8Q7R5PSqFpHRGFZ"
         for iy in PATH_mask:

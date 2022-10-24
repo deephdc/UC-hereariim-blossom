@@ -5,6 +5,7 @@ import tempfile
 from marshmallow import missing
 import yaml
 from webargs import fields
+from datetime import datetime
 
 #127.0.0.1
 
@@ -59,7 +60,7 @@ from tensorflow.keras.layers import BatchNormalization, Activation, Dense, Dropo
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import Sequential
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+# from tensorflow.python.keras.callbacks import TensorBoard
 import tensorflow as tf
 import os
 import gdown
@@ -81,26 +82,25 @@ def _catch_error(f):
             raise web.HTTPBadRequest(reason=e)
     return wrap
 
-def _fields_to_dict(fields_in):
-    """
-    Function to convert marshmallow fields to dict()
-    """
-    dict_out = {}
-    for k, v in fields_in.items():
-        param = {}
-        param["default"] = v.missing
-        param["type"] = type(v.missing)
-        param["required"] = getattr(v, "required", False)
+# def _fields_to_dict(fields_in):
+#     """
+#     Function to convert marshmallow fields to dict()
+#     """
+#     dict_out = {}
+#     for k, v in fields_in.items():
+#         param = {}
+#         param["default"] = v.missing
+#         param["type"] = type(v.missing)
+#         param["required"] = getattr(v, "required", False)
 
-        v_help = v.metadata["description"]
-        if "enum" in v.metadata.keys():
-            v_help = f"{v_help}. Choices: {v.metadata['enum']}"
-        param["help"] = v_help
+#         v_help = v.metadata["description"]
+#         if "enum" in v.metadata.keys():
+#             v_help = f"{v_help}. Choices: {v.metadata['enum']}"
+#         param["help"] = v_help
 
-        dict_out[k] = param
+#         dict_out[k] = param
 
-    return dict_out
-
+#     return dict_out
 
 def mount_nextcloud(frompath, topath):
     """
@@ -122,28 +122,28 @@ def mount_nextcloud(frompath, topath):
     return output, error
 
 
-def launch_cmd(logdir, port):
-    subprocess.call(["tensorboard",
-                     "--logdir", f"{logdir}",
-                     "--port", f"{port}",
-                     "--host", "0.0.0.0"])
+# def launch_cmd(logdir, port):
+#     subprocess.call(["tensorboard",
+#                      "--logdir", f"{logdir}",
+#                      "--port", f"{port}",
+#                      "--host", "0.0.0.0"])
 
 
-def launch_tensorboard(logdir, port=6006):
-    """
-    Run Tensorboard on a separate Process on behalf of the user
-    Parameters
-    ==========
-    * logdir: str, pathlib.Path
-        Folder path to tensorboard logs.
-    * port: int
-        Port to use for the monitoring webserver.
-    """
-    subprocess.run(
-        ["fuser", "-k", f"{port}/tcp"]  # kill any previous process in that port
-    )
-    p = Process(target=launch_cmd, args=(logdir, port), daemon=True)
-    p.start()
+# def launch_tensorboard(logdir, port=6006):
+#     """
+#     Run Tensorboard on a separate Process on behalf of the user
+#     Parameters
+#     ==========
+#     * logdir: str, pathlib.Path
+#         Folder path to tensorboard logs.
+#     * port: int
+#         Port to use for the monitoring webserver.
+#     """
+#     subprocess.run(
+#         ["fuser", "-k", f"{port}/tcp"]  # kill any previous process in that port
+#     )
+#     p = Process(target=launch_cmd, args=(logdir, port), daemon=True)
+#     p.start()
     
 # try:
 #     mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
@@ -332,10 +332,10 @@ def train(**args):
     print("link_zip_file_images ",link_zip_file_images)
     
     try:
-        zip_dir = tempfile.TemporaryDirectory()
+        image_dir = tempfile.TemporaryDirectory()
         # mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
-        mount_nextcloud('rshare:/data/images', os.path.join(zip_dir.name,'images'))
-        print(">> RSHARE",os.listdir(os.path.join(zip_dir.name,'images')))        
+        mount_nextcloud('rshare:/data/images', os.path.join(image_dir.name,'images'))
+        print(">> RSHARE",os.listdir(os.path.join(image_dir.name,'images')))        
     except Exception as e:
         print(e)
         if link_zip_file_images!="None":
@@ -660,6 +660,13 @@ def train(**args):
     print("total y_train :",len(y_train))
     print("total x_val :",len(x_val))
     print("total y_val :",len(y_val))
+
+    # CONF = cfg.conf_dict
+    # timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+    # print("time :",timestamp)
+
+    # tensorboad = TensorBoard(log_dir=paths.get_logs_dir())
+
     results = model.fit(x_train,y_train,
                     validation_data=(x_val,y_val),
                     epochs=epoch_user, batch_size = batch_size_user,
@@ -805,23 +812,43 @@ def train(**args):
     
     print("QUALITY OF RETRAIN MODEL :",output["retrain model"])
     if output["retrain model"]=="better":
-        print("Downloading elements...")
-        print("GoogleAuth ...")
-        gauth = GoogleAuth()     
-        print("GoogleAuth done")      
-        drive = GoogleDrive(gauth)  
-        print("Connected")  
 
         A = os.listdir(output_zip_model_opt_thr_path_dir) #contient seulement et uniquement des fichiers !!!
         # print(os.listdir(path_folder_to_image)) 
         PATH_mask = [os.path.join(output_zip_model_opt_thr_path_dir,ix) for ix in A]
         print(PATH_mask)
 
+        print("Downloading elements...")
+        print("GoogleAuth ...")
+        gauth = GoogleAuth()    
+
+        gauth.LoadCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
+        if gauth.credentials is None:
+            print("Authenticate if they're not there")
+            gauth.LocalWebserverAuth()
+        elif gauth.access_token_expired:
+            print("Refresh them if expired")
+            gauth.Refresh()
+        else:
+            print("Initialize the saved creds")
+            gauth.Authorize()
+        print("Save the current credentials to a file")
+        gauth.SaveCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
+
+        print("GoogleAuth done")   
+        drive = GoogleDrive(gauth)  
+        print("Connected")
+
         id_output_folder = "1JMeVNJPrOtK13ZIqE8Q7R5PSqFpHRGFZ"
         for iy in PATH_mask:
+            print(iy)
             gfile = drive.CreateFile({'parents': [{'id': id_output_folder}]})
+            print("1/3",iy)
             gfile.SetContentFile(iy)
-            gfile.Upload() # Upload the file.
+            print("2/3",iy)
+            gfile.Upload() # Upload the file .
+            print("3/3",iy)
+        print("done")
     print("Shutdown")
     return output
 

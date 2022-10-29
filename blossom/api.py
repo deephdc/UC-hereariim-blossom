@@ -541,14 +541,20 @@ def train(**args):
 
     # tensorboad = TensorBoard(log_dir=paths.get_logs_dir())
 
+    print("1")
     tensorboad = tf.keras.callbacks.TensorBoard(log_dir=paths.get_logs_dir())
 
-
+    print("2")
     port = os.getenv('monitorPORT', 6006)
+    print("3")
     port = int(port) if len(str(port)) >= 4 else 6006
+    print("4")
     subprocess.run(['fuser', '-k', '{}/tcp'.format(port)])  # kill any previous process in that port
+    print("5")
     p = Process(target=launch_tensorboard, args=(port, paths.get_logs_dir()), daemon=True)
+    print("6")
     p.start()
+    print("7")
 
     results = model.fit(x_train,y_train,
                     validation_data=(x_val,y_val),

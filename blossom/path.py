@@ -16,6 +16,9 @@ def get_models_dir():
 def get_data_dir():
     return os.path.join(get_base_dir(), "dataset")
 
+def get_logs_dir():
+    return os.path.join(get_models_dir(),"logs")
+
 print(os.path.abspath(os.path.join(homedir, base_dir)))
 print(os.path.join(get_base_dir(),os.path.join('blossom','models')))
 print(os.path.join(get_base_dir(),os.path.join('blossom','dataset')))

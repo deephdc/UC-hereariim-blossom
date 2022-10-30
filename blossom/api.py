@@ -549,7 +549,7 @@ def train(**args):
     print("3")
     port = int(port) if len(str(port)) >= 4 else 6006
     print("4")
-    subprocess.run(['fuser', '-k', '{}/tcp'.format(port)])  # kill any previous process in that port
+    # subprocess.run(['fuser', '-k', port+'/tcp'])  # kill any previous process in that port
     print("5")
     p = Process(target=launch_tensorboard, args=(port, paths.get_logs_dir()), daemon=True)
     print("6")

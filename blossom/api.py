@@ -289,17 +289,28 @@ def train(**args):
             path_image_data = cfg.DATA_IMAGE
             path_masks_data = cfg.DATA_MASK
 
+    path_image_data = cfg.DATA_IMAGE
+    path_masks_data = cfg.DATA_MASK
+
     # Model zip
     output_dir_model = tempfile.TemporaryDirectory()
     output_path_dir_model = output_dir_model.name
+
+    # mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
+    mount_nextcloud('rshare:/data/models', output_dir_model.name)
+    nom_du_fichier_zip = os.listdir(os.path.join(output_dir_model.name,'models'))[0]
+    print(">> RSHARE",os.listdir(os.path.join(output_dir_model.name,'models')))    
         
-    link_zip_file_model = yaml.safe_load(args["Link_model"])
-    id_file_model = link_zip_file_model.split('/')[-2]
-    url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
+    output_zip_path = os.path.join(output_dir_model.name,'images',nom_du_fichier_zip)
+    print("output_zip_path model",output_zip_path)
+
+    # link_zip_file_model = yaml.safe_load(args["Link_model"])
+    # id_file_model = link_zip_file_model.split('/')[-2]
+    # url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
     
-    output_zip_path = os.path.join(output_path_dir_model,'models_images.zip')
+    # output_zip_path = os.path.join(output_path_dir_model,'models_images.zip')
     print("Loading..")
-    gdown.download(url_model, output_zip_path, quiet=False)
+    # gdown.download(url_model, output_zip_path, quiet=False)
     # print(">>> output_dir_model",output_dir_model)
     with ZipFile(output_zip_path,'r') as zipObject:
         listOfFileNames = zipObject.namelist()

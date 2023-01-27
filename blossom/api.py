@@ -235,6 +235,7 @@ def train(**args):
     try:
         image_dir = tempfile.TemporaryDirectory()
         # mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
+        print("mount_nextcloud")
         mount_nextcloud('rshare:/data/images', image_dir.name)
         nom_du_fichier_zip = os.listdir(os.path.join(image_dir.name,'images'))[0]
         print(">> RSHARE",os.listdir(os.path.join(image_dir.name,'images')))    

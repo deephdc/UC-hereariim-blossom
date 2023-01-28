@@ -231,8 +231,28 @@ def train(**args):
     try:
         image_dir = tempfile.TemporaryDirectory()
         
-        mount_nextcloud('rshare:/data/images', os.path.join(image_dir.name,'images'))
+        mount_nextcloud('rshare:/data/images', image_dir.name)
         print(">> RSHARE",os.listdir(os.path.join(image_dir.name,'images')))        
+        name_img_zip_file = os.listdir(os.path.join(image_dir.name,'images'))[0]
+        output_zip_path = os.path.join(image_dir.name,'images',name_img_zip_file)
+
+        zip_dir = tempfile.TemporaryDirectory()
+        with ZipFile(output_zip_path,'r') as zipObject:
+            listOfFileNames = zipObject.namelist()
+            # print(listOfFileNames)
+            for i in range(len(listOfFileNames)):
+                zipObject.extract(listOfFileNames[i],path=zip_dir.name)
+        A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]            
+        # print("A1 ",A1)
+        verif = A1[0].split('\\')
+        if verif[-1]=='images':
+            path_image_data = A1[0]
+            path_masks_data = A1[1]
+        else:
+            path_image_data = A1[1]
+            path_masks_data = A1[0]    
+
+
     except Exception as e:
         print(e)
         if link_zip_file_images!="None":
@@ -265,21 +285,37 @@ def train(**args):
             path_masks_data = cfg.DATA_MASK
 
     # Model zip
-    output_dir_model = tempfile.TemporaryDirectory()
-    output_path_dir_model = output_dir_model.name
+    try:
+        output_dir_model = tempfile.TemporaryDirectory()
+        output_path_dir_model = output_dir_model.name
+        mount_nextcloud('rshare:/data/models', output_dir_model.name)
+
+        name_models_zip_file = os.listdir(os.path.join(output_dir_model.name,'models'))[0]
+        output_zip_path = os.path.join(output_dir_model.name,'models',name_models_zip_file)
+        print("Loading..")
         
-    link_zip_file_model = yaml.safe_load(args["Link_model"])
-    id_file_model = link_zip_file_model.split('/')[-2]
-    url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
-    
-    output_zip_path = os.path.join(output_path_dir_model,'models_images.zip')
-    print("Loading..")
-    gdown.download(url_model, output_zip_path, quiet=False)
-    # print(">>> output_dir_model",output_dir_model)
-    with ZipFile(output_zip_path,'r') as zipObject:
-        listOfFileNames = zipObject.namelist()
-        for i in range(len(listOfFileNames)):
-            zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
+        with ZipFile(output_zip_path,'r') as zipObject:
+            listOfFileNames = zipObject.namelist()
+            for i in range(len(listOfFileNames)):
+                zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
+
+    except Exception as e:
+        print(e)
+        output_dir_model = tempfile.TemporaryDirectory()
+        output_path_dir_model = output_dir_model.name
+            
+        link_zip_file_model = yaml.safe_load(args["Link_model"])
+        id_file_model = link_zip_file_model.split('/')[-2]
+        url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
+        
+        output_zip_path = os.path.join(output_path_dir_model,'models_images.zip')
+        print("Loading..")
+        gdown.download(url_model, output_zip_path, quiet=False)
+        # print(">>> output_dir_model",output_dir_model)
+        with ZipFile(output_zip_path,'r') as zipObject:
+            listOfFileNames = zipObject.namelist()
+            for i in range(len(listOfFileNames)):
+                zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
     
     # print(os.listdir(output_path_dir_model))
     model_h5_path = os.path.join(output_path_dir_model,"best_model_W_BCE_model.h5")

@@ -35,7 +35,6 @@ import warnings
 
 import numpy as np
 import imageio
-import matplotlib.pyplot as plt
 
 from itertools import chain
 from skimage.morphology import label
@@ -219,6 +218,12 @@ def get_train_args():
     }
     return arg_dict
 
+def warm():
+    try:
+        print("cc")
+    except Exception as e:
+        print(e)
+
 def train(**args):
     output={}
     output["hyperparameter"]=args
@@ -234,7 +239,7 @@ def train(**args):
     
     try:
         image_dir = tempfile.TemporaryDirectory()
-        # mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
+        
         mount_nextcloud('rshare:/data/images', os.path.join(image_dir.name,'images'))
         print(">> RSHARE",os.listdir(os.path.join(image_dir.name,'images')))        
     except Exception as e:

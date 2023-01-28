@@ -16,7 +16,7 @@ numpy
 tensorflow
 focal_loss
 scikit-image
-sklearn
+scikit-learn
 h5py
 imshowpair
 gdown

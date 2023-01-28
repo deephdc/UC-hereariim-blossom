@@ -135,7 +135,6 @@ def _catch_error(f):
 # except Exception as e:
 #     print(e)
 
-@_catch_error
 def get_metadata():
     """
     DO NOT REMOVE - All modules should have a get_metadata() function
@@ -218,20 +217,12 @@ def get_train_args():
     }
     return arg_dict
 
-def warm():
-    try:
-        print("cc")
-    except Exception as e:
-        print(e)
-
 def train(**args):
     output={}
     output["hyperparameter"]=args
     backend.clear_session()
     
     print("Model downloading...")
-    
-
     
     link_zip_file_images = yaml.safe_load(args["Link_images"])    
     # Images zip

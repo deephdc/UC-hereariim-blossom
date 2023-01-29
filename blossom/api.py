@@ -819,15 +819,16 @@ def predict(**kwargs):
 
     print(originalname)
 
-    link_zip_file = kwargs["Link"] 
-    id_file = link_zip_file.split('/')[-2]
-    url = "https://drive.google.com/uc?export=download&id="+id_file
+    link_zip_file = kwargs["Link"]
+    if link_zip_file!=None:
+        id_file = link_zip_file.split('/')[-2]
+        url = "https://drive.google.com/uc?export=download&id="+id_file
 
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
         # Load model from gdrive
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir = output_dir_model.name
-        
+        print("mount_nextcloud")
         mount_nextcloud('rshare:/data/models/',output_path_dir)
         name_models_images = os.listdir(os.path.join(output_path_dir,'models'))[0]
         print("name_models_images",name_models_images)

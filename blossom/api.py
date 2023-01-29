@@ -230,11 +230,10 @@ def train(**args):
     
     try:
         image_dir = tempfile.TemporaryDirectory()
-        
-        mount_nextcloud('rshare:/data/images', image_dir.name)
-        print(">> RSHARE",os.listdir(os.path.join(image_dir.name,'images')))        
-        name_img_zip_file = os.listdir(os.path.join(image_dir.name,'images'))[0]
-        output_zip_path = os.path.join(image_dir.name,'images',name_img_zip_file)
+        subprocess.run(["rclone", "copy","rshare:data/images/", image_dir.name])
+        print(">> RSHARE",os.listdir(os.path.join(image_dir.name)))        
+        name_img_zip_file = os.listdir(os.path.join(image_dir.name))[0]
+        output_zip_path = os.path.join(image_dir.name,name_img_zip_file)
 
         zip_dir = tempfile.TemporaryDirectory()
         with ZipFile(output_zip_path,'r') as zipObject:
@@ -288,10 +287,9 @@ def train(**args):
     try:
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir_model = output_dir_model.name
-        mount_nextcloud('rshare:/data/models', output_dir_model.name)
-
-        name_models_zip_file = os.listdir(os.path.join(output_dir_model.name,'models'))[0]
-        output_zip_path = os.path.join(output_dir_model.name,'models',name_models_zip_file)
+        subprocess.run(["rclone", "copy","rshare:data/models/", output_dir_model.name])
+        name_models_zip_file = os.listdir(os.path.join(output_dir_model.name))[0]
+        output_zip_path = os.path.join(output_dir_model.name,name_models_zip_file)
         print("Loading..")
         
         with ZipFile(output_zip_path,'r') as zipObject:
@@ -739,7 +737,7 @@ def train(**args):
         PATH_mask = [os.path.join(output_zip_model_opt_thr_path_dir,ix) for ix in A]
 
         for ix in PATH_mask:
-            mount_nextcloud(ix,'rshare:/data/output/')
+            subprocess.run(["rclone", "copy", ix, "rshare:data/output/"])
             print(ix,' done..')
         print("Shutdown")
 
@@ -830,11 +828,11 @@ def predict(**kwargs):
         print("mount_nextcloud")
         subprocess.run(["rclone", "copy", "rshare:data/models/", output_path_dir])
         print(os.listdir(output_path_dir))
-        print("mount_nextcloud2")
-        mount_nextcloud('rshare:/data/models/',output_path_dir)
-        name_models_images = os.listdir(os.path.join(output_path_dir,'models'))[0]
+        # print("mount_nextcloud2")
+        # mount_nextcloud('rshare:/data/models/',output_path_dir)
+        name_models_images = os.listdir(output_path_dir)[0]
         print("name_models_images",name_models_images)
-        output_zip_path = os.path.join(output_path_dir,'models',name_models_images)
+        output_zip_path = os.path.join(output_path_dir,name_models_images)
         print("output_zip_path",output_zip_path)
         # output_zip_path = os.path.join(output_path_dir,'models_images.zip')
         # # print("Loading..")
@@ -894,10 +892,10 @@ def predict(**kwargs):
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir = output_dir_model.name
 
-        mount_nextcloud('rshare:/data/models/',output_path_dir)
-        name_models_images = os.listdir(os.path.join(output_path_dir,'models'))[0]
+        subprocess.run(["rclone", "copy", "rshare:data/models/", output_path_dir])
+        name_models_images = os.listdir(os.path.join(output_path_dir))[0]
         print("name_models_images",name_models_images)
-        output_zip_path = os.path.join(output_path_dir,'models',name_models_images)
+        output_zip_path = os.path.join(output_path_dir,name_models_images)
         print("output_zip_path",output_zip_path)
         # output_zip_path = os.path.join(output_path_dir,'models_images.zip')
         # print("Loading..")

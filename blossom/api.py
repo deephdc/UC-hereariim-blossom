@@ -819,10 +819,9 @@ def predict(**kwargs):
 
     print(originalname)
 
-    link_zip_file = kwargs["Link"]
-    if link_zip_file!=None:
-        id_file = link_zip_file.split('/')[-2]
-        url = "https://drive.google.com/uc?export=download&id="+id_file
+    # link_zip_file = kwargs["Link"]
+    # id_file = link_zip_file.split('/')[-2]
+    # url = "https://drive.google.com/uc?export=download&id="+id_file
 
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
         # Load model from gdrive

@@ -829,7 +829,7 @@ def predict(**kwargs):
         output_path_dir = output_dir_model.name
         print("mount_nextcloud")
         command = ["rclone", "copy", "rshare:/data/models/", f"{output_path_dir}"]
-        subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(os.listdir(output_path_dir))
         print("mount_nextcloud2")
         mount_nextcloud('rshare:/data/models/',output_path_dir)

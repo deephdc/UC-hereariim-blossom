@@ -736,42 +736,46 @@ def train(**args):
     if output["retrain model"]=="better":
 
         A = os.listdir(output_zip_model_opt_thr_path_dir) #contient seulement et uniquement des fichiers !!!
-        # print(os.listdir(path_folder_to_image)) 
         PATH_mask = [os.path.join(output_zip_model_opt_thr_path_dir,ix) for ix in A]
-        print(PATH_mask)
 
-        print("Downloading elements...")
-        print("GoogleAuth ...")
-        gauth = GoogleAuth()    
+        for ix in PATH_mask:
+            mount_nextcloud(ix,'rshare:/data/output/')
+            print(ix,' done..')
+        print("Shutdown")
 
-        gauth.LoadCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
-        if gauth.credentials is None:
-            print("Authenticate if they're not there")
-            gauth.LocalWebserverAuth()
-        elif gauth.access_token_expired:
-            print("Refresh them if expired")
-            gauth.Refresh()
-        else:
-            print("Initialize the saved creds")
-            gauth.Authorize()
-        print("Save the current credentials to a file")
-        gauth.SaveCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
 
-        print("GoogleAuth done")   
-        drive = GoogleDrive(gauth)  
-        print("Connected")
+    #     print("Downloading elements...")
+    #     print("GoogleAuth ...")
+    #     gauth = GoogleAuth()    
 
-        id_output_folder = "1JMeVNJPrOtK13ZIqE8Q7R5PSqFpHRGFZ"
-        for iy in PATH_mask:
-            print(iy)
-            gfile = drive.CreateFile({'parents': [{'id': id_output_folder}]})
-            print("1/3",iy)
-            gfile.SetContentFile(iy)
-            print("2/3",iy)
-            gfile.Upload() # Upload the file .
-            print("3/3",iy)
-        print("done")
-    print("Shutdown")
+    #     gauth.LoadCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
+    #     if gauth.credentials is None:
+    #         print("Authenticate if they're not there")
+    #         gauth.LocalWebserverAuth()
+    #     elif gauth.access_token_expired:
+    #         print("Refresh them if expired")
+    #         gauth.Refresh()
+    #     else:
+    #         print("Initialize the saved creds")
+    #         gauth.Authorize()
+    #     print("Save the current credentials to a file")
+    #     gauth.SaveCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
+
+    #     print("GoogleAuth done")   
+    #     drive = GoogleDrive(gauth)  
+    #     print("Connected")
+
+    #     id_output_folder = "1JMeVNJPrOtK13ZIqE8Q7R5PSqFpHRGFZ"
+    #     for iy in PATH_mask:
+    #         print(iy)
+    #         gfile = drive.CreateFile({'parents': [{'id': id_output_folder}]})
+    #         print("1/3",iy)
+    #         gfile.SetContentFile(iy)
+    #         print("2/3",iy)
+    #         gfile.Upload() # Upload the file .
+    #         print("3/3",iy)
+    #     print("done")
+    # print("Shutdown")
     return output
 
 
@@ -824,10 +828,15 @@ def predict(**kwargs):
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir = output_dir_model.name
         
-        output_zip_path = os.path.join(output_path_dir,'models_images.zip')
-        # print("Loading..")
-        gdown.download(url, output_zip_path, quiet=False)
-        # print(">>> output_dir_model",output_dir_model)
+        mount_nextcloud('rshare:/data/models/',output_path_dir)
+        name_models_images = os.listdir(os.path.join(output_path_dir,'models'))[0]
+        print("name_models_images",name_models_images)
+        output_zip_path = os.path.join(output_path_dir,'models',name_models_images)
+        print("output_zip_path",output_zip_path)
+        # output_zip_path = os.path.join(output_path_dir,'models_images.zip')
+        # # print("Loading..")
+        # gdown.download(url, output_zip_path, quiet=False)
+        # # print(">>> output_dir_model",output_dir_model)
         with ZipFile(output_zip_path,'r') as zipObject:
             listOfFileNames = zipObject.namelist()
             for i in range(len(listOfFileNames)):
@@ -881,11 +890,16 @@ def predict(**kwargs):
         # Load model from gdrive
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir = output_dir_model.name
-        
-        output_zip_path = os.path.join(output_path_dir,'models_images.zip')
-        print("Loading..")
-        gdown.download(url, output_zip_path, quiet=False)
-        print(">>> output_dir_model",output_dir_model)
+
+        mount_nextcloud('rshare:/data/models/',output_path_dir)
+        name_models_images = os.listdir(os.path.join(output_path_dir,'models'))[0]
+        print("name_models_images",name_models_images)
+        output_zip_path = os.path.join(output_path_dir,'models',name_models_images)
+        print("output_zip_path",output_zip_path)
+        # output_zip_path = os.path.join(output_path_dir,'models_images.zip')
+        # print("Loading..")
+        # gdown.download(url, output_zip_path, quiet=False)
+        # print(">>> output_dir_model",output_dir_model)
         with ZipFile(output_zip_path,'r') as zipObject:
             listOfFileNames = zipObject.namelist()
             for i in range(len(listOfFileNames)):

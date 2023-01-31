@@ -217,6 +217,19 @@ def get_train_args():
     }
     return arg_dict
 
+try:
+    print("mount_nextcloud")
+    image_dir = tempfile.TemporaryDirectory()
+    output_dir_model = tempfile.TemporaryDirectory()
+    output_path_dir = output_dir_model.name
+    print("image_dir",image_dir)
+    subprocess.run(["rclone", "copy","rshare:data/images/", image_dir.name])
+    print("output_path_dir",output_path_dir)
+    subprocess.run(["rclone", "copy", "rshare:data/models/", output_path_dir])
+
+except Exception as e:
+    print(e)
+
 def train(**args):
     output={}
     output["hyperparameter"]=args
@@ -229,8 +242,6 @@ def train(**args):
     print("link_zip_file_images ",link_zip_file_images)
     
     try:
-        image_dir = tempfile.TemporaryDirectory()
-        subprocess.run(["rclone", "copy","rshare:data/images/", image_dir.name])
         print(">> RSHARE",os.listdir(os.path.join(image_dir.name)))        
         name_img_zip_file = os.listdir(os.path.join(image_dir.name))[0]
         output_zip_path = os.path.join(image_dir.name,name_img_zip_file)
@@ -823,10 +834,10 @@ def predict(**kwargs):
 
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
         # Load model from gdrive
-        output_dir_model = tempfile.TemporaryDirectory()
-        output_path_dir = output_dir_model.name
-        print("mount_nextcloud")
-        subprocess.run(["rclone", "copy","--update", "rshare:data/models/", output_path_dir])
+        # output_dir_model = tempfile.TemporaryDirectory()
+        # output_path_dir = output_dir_model.name
+        # print("mount_nextcloud")
+        # subprocess.run(["rclone", "copy","--update", "rshare:data/models/", output_path_dir])
         print(os.listdir(output_path_dir))
         # print("mount_nextcloud2")
         # mount_nextcloud('rshare:/data/models/',output_path_dir)
@@ -889,10 +900,10 @@ def predict(**kwargs):
 
     elif originalname[-3:] in ['zip','ZIP']:
         # Load model from gdrive
-        output_dir_model = tempfile.TemporaryDirectory()
-        output_path_dir = output_dir_model.name
+        # output_dir_model = tempfile.TemporaryDirectory()
+        # output_path_dir = output_dir_model.name
 
-        subprocess.run(["rclone", "copy", "rshare:data/models/", output_path_dir])
+        # subprocess.run(["rclone", "copy", "rshare:data/models/", output_path_dir])
         name_models_images = os.listdir(os.path.join(output_path_dir))[0]
         print("name_models_images",name_models_images)
         output_zip_path = os.path.join(output_path_dir,name_models_images)

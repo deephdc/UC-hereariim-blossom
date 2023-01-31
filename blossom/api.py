@@ -223,6 +223,9 @@ try:
     output_dir_model = tempfile.TemporaryDirectory()
     output_path_dir = output_dir_model.name
     print("image_dir",image_dir)
+    result = subprocess.run(["rclone","listremotes"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, error = result.communicate()
+    print(output, error)
     result = subprocess.Popen(["rclone", "copy","rshare:data/images/", image_dir.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = result.communicate()
     print(output, error)

@@ -238,6 +238,8 @@ try:
 
 except Exception as e:
     print(e)
+    
+print("image_dir content",os.listdir(image_dir.name)[0])
 
 def train(**args):
     output={}

@@ -864,10 +864,10 @@ def predict(**kwargs):
 
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
         # Load model from gdrive
-        # output_dir_model = tempfile.TemporaryDirectory()
-        # output_path_dir = output_dir_model.name
-        # print("mount_nextcloud")
-        # subprocess.run(["rclone", "copy","--update", "rshare:data/models/", output_path_dir])
+        output_dir_model = tempfile.TemporaryDirectory()
+        output_path_dir = output_dir_model.name
+        print("mount_nextcloud")
+        subprocess.run(["rclone", "copy","--update", "rshare:data/models/", output_path_dir])
         print(os.listdir(output_path_dir))
         # print("mount_nextcloud2")
         # mount_nextcloud('rshare:/data/models/',output_path_dir)

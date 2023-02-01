@@ -283,7 +283,9 @@ def train(**args):
             path_masks_data = A1[1]
         else:
             path_image_data = A1[1]
-            path_masks_data = A1[0]  
+            path_masks_data = A1[0]
+        print(path_image_data)
+        print(path_masks_data)
     except Exception as e:
         path_image_data = cfg.DATA_IMAGE
         path_masks_data = cfg.DATA_MASK

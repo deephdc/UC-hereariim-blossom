@@ -220,27 +220,22 @@ def get_train_args():
 # os.system("rclone listremotes")
 
 try:
-    print("date")
-    subprocess.run(["date"])
-    print("mount_nextcloud")
-    subprocess.run(["rclone"])
-    print("config file")
-    subprocess.run(["rclone","config","file"])
-    print("file")
-    subprocess.run(["rclone","listremotes"])
-    print("done")
+    # print("date")
+    # subprocess.run(["date"])
+    # print("mount_nextcloud")
+    # subprocess.run(["rclone"])
+    # print("config file")
+    # subprocess.run(["rclone","config","file"])
+    # print("file")
+    # subprocess.run(["rclone","listremotes"])
+    # print("done")
     # print("mount_nextcloud")
     image_dir = tempfile.TemporaryDirectory()
     output_dir_model = tempfile.TemporaryDirectory()
     # output_path_dir = output_dir_model.name
     # print("image_dir",image_dir.name)
     # print("output_dir_model",output_path_dir)
-    
-    print('rend rclone')
-    file1 = open('/srv/.rclone/rclone.conf', 'r')
-    print(file1.read())
-    
-    subprocess.run(["rclone","lsf","rshare:data"])
+        
     subprocess.run(["rclone","copy","rshare:data/images/", image_dir.name])
     subprocess.run(["rclone","copy","rshare:data/models/", output_dir_model.name])
     
@@ -290,7 +285,7 @@ def train(**args):
     except Exception as e:
         path_image_data = cfg.DATA_IMAGE
         path_masks_data = cfg.DATA_MASK
-
+    print('done')
 
     # except Exception as e:
     #     print(e)
@@ -324,11 +319,12 @@ def train(**args):
     #         path_masks_data = cfg.DATA_MASK
 
     # Model zip
-    output_dir_model = tempfile.TemporaryDirectory()
+    print(">> MODEL",os.listdir(output_dir_model.name))
     output_path_dir_model = output_dir_model.name
-    name_models_zip_file = os.listdir(os.path.join(output_dir_model.name))[0]
+    name_models_zip_file = os.listdir(output_dir_model.name)[0]
     output_zip_path = os.path.join(output_dir_model.name,name_models_zip_file)
     print("Loading..")
+    
     with ZipFile(output_zip_path,'r') as zipObject:
         listOfFileNames = zipObject.namelist()
         for i in range(len(listOfFileNames)):

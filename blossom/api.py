@@ -290,71 +290,83 @@ def train(**args):
             path_masks_data = A1[1]
         else:
             path_image_data = A1[1]
-            path_masks_data = A1[0]    
-
-
+            path_masks_data = A1[0]  
     except Exception as e:
-        print(e)
-        if link_zip_file_images!="None":
-            output_dir_images = tempfile.TemporaryDirectory()
-            output_path_dir_images = output_dir_images.name
+        path_image_data = cfg.DATA_IMAGE
+        path_masks_data = cfg.DATA_MASK
+
+
+    # except Exception as e:
+    #     print(e)
+    #     if link_zip_file_images!="None":
+    #         output_dir_images = tempfile.TemporaryDirectory()
+    #         output_path_dir_images = output_dir_images.name
             
-            id_file_images = link_zip_file_images.split('/')[-2]
-            url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
-            output_zip_path = os.path.join(output_path_dir_images,'image_user.zip')
-            print("Loading..")
-            gdown.download(url_images, output_zip_path, quiet=False)
-            # print(">>> output_dir_images",output_dir_images)
-            zip_dir = tempfile.TemporaryDirectory()
-            with ZipFile(output_zip_path,'r') as zipObject:
-                listOfFileNames = zipObject.namelist()
-                # print(listOfFileNames)
-                for i in range(len(listOfFileNames)):
-                    zipObject.extract(listOfFileNames[i],path=zip_dir.name)
-            A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]            
-            # print("A1 ",A1)
-            verif = A1[0].split('\\')
-            if verif[-1]=='images':
-                path_image_data = A1[0]
-                path_masks_data = A1[1]
-            else:
-                path_image_data = A1[1]
-                path_masks_data = A1[0]        
-        else:
-            path_image_data = cfg.DATA_IMAGE
-            path_masks_data = cfg.DATA_MASK
+    #         id_file_images = link_zip_file_images.split('/')[-2]
+    #         url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
+    #         output_zip_path = os.path.join(output_path_dir_images,'image_user.zip')
+    #         print("Loading..")
+    #         gdown.download(url_images, output_zip_path, quiet=False)
+    #         # print(">>> output_dir_images",output_dir_images)
+    #         zip_dir = tempfile.TemporaryDirectory()
+    #         with ZipFile(output_zip_path,'r') as zipObject:
+    #             listOfFileNames = zipObject.namelist()
+    #             # print(listOfFileNames)
+    #             for i in range(len(listOfFileNames)):
+    #                 zipObject.extract(listOfFileNames[i],path=zip_dir.name)
+    #         A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]            
+    #         # print("A1 ",A1)
+    #         verif = A1[0].split('\\')
+    #         if verif[-1]=='images':
+    #             path_image_data = A1[0]
+    #             path_masks_data = A1[1]
+    #         else:
+    #             path_image_data = A1[1]
+    #             path_masks_data = A1[0]        
+    #     else:
+    #         path_image_data = cfg.DATA_IMAGE
+    #         path_masks_data = cfg.DATA_MASK
 
     # Model zip
-    try:
-        output_dir_model = tempfile.TemporaryDirectory()
-        output_path_dir_model = output_dir_model.name
-        subprocess.run(["rclone", "copy","rshare:data/models/", output_dir_model.name])
-        name_models_zip_file = os.listdir(os.path.join(output_dir_model.name))[0]
-        output_zip_path = os.path.join(output_dir_model.name,name_models_zip_file)
-        print("Loading..")
+    output_dir_model = tempfile.TemporaryDirectory()
+    output_path_dir_model = output_dir_model.name
+    name_models_zip_file = os.listdir(os.path.join(output_dir_model.name))[0]
+    output_zip_path = os.path.join(output_dir_model.name,name_models_zip_file)
+    print("Loading..")
+    with ZipFile(output_zip_path,'r') as zipObject:
+        listOfFileNames = zipObject.namelist()
+        for i in range(len(listOfFileNames)):
+            zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
+    # try:
+    #     output_dir_model = tempfile.TemporaryDirectory()
+    #     output_path_dir_model = output_dir_model.name
+    #     subprocess.run(["rclone", "copy","rshare:data/models/", output_dir_model.name])
+    #     name_models_zip_file = os.listdir(os.path.join(output_dir_model.name))[0]
+    #     output_zip_path = os.path.join(output_dir_model.name,name_models_zip_file)
+    #     print("Loading..")
         
-        with ZipFile(output_zip_path,'r') as zipObject:
-            listOfFileNames = zipObject.namelist()
-            for i in range(len(listOfFileNames)):
-                zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
+    #     with ZipFile(output_zip_path,'r') as zipObject:
+    #         listOfFileNames = zipObject.namelist()
+    #         for i in range(len(listOfFileNames)):
+    #             zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
 
-    except Exception as e:
-        print(e)
-        output_dir_model = tempfile.TemporaryDirectory()
-        output_path_dir_model = output_dir_model.name
+    # except Exception as e:
+    #     print(e)
+    #     output_dir_model = tempfile.TemporaryDirectory()
+    #     output_path_dir_model = output_dir_model.name
             
-        link_zip_file_model = yaml.safe_load(args["Link_model"])
-        id_file_model = link_zip_file_model.split('/')[-2]
-        url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
+    #     link_zip_file_model = yaml.safe_load(args["Link_model"])
+    #     id_file_model = link_zip_file_model.split('/')[-2]
+    #     url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
         
-        output_zip_path = os.path.join(output_path_dir_model,'models_images.zip')
-        print("Loading..")
-        gdown.download(url_model, output_zip_path, quiet=False)
-        # print(">>> output_dir_model",output_dir_model)
-        with ZipFile(output_zip_path,'r') as zipObject:
-            listOfFileNames = zipObject.namelist()
-            for i in range(len(listOfFileNames)):
-                zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
+    #     output_zip_path = os.path.join(output_path_dir_model,'models_images.zip')
+    #     print("Loading..")
+    #     gdown.download(url_model, output_zip_path, quiet=False)
+    #     # print(">>> output_dir_model",output_dir_model)
+    #     with ZipFile(output_zip_path,'r') as zipObject:
+    #         listOfFileNames = zipObject.namelist()
+    #         for i in range(len(listOfFileNames)):
+    #             zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
     
     # print(os.listdir(output_path_dir_model))
     model_h5_path = os.path.join(output_path_dir_model,"best_model_W_BCE_model.h5")

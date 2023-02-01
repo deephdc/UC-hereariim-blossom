@@ -217,29 +217,30 @@ def get_train_args():
     }
     return arg_dict
 
+os.system("rclone listremotes")
+
 try:
     print("mount_nextcloud")
     image_dir = tempfile.TemporaryDirectory()
     output_dir_model = tempfile.TemporaryDirectory()
     output_path_dir = output_dir_model.name
     print("image_dir",image_dir.name)
-    result = os.system("rclone listremotes")
-    result
+    print("output_dir_model",output_path_dir)
+    
+     
+    result = subprocess.Popen(["rclone", "copy","rshare:data/images/", image_dir.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
     output, error = result.communicate()
-    print("run",output, error)
-    result = subprocess.Popen(["rclone", "copy","rshare:data/images/", image_dir.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    print("image_dir content",os.listdir(image_dir.name)[0])
-    output, error = result.communicate()
-    print("Popen",output, error)
+    print("Popen",output, error)    
     if error:
         warnings.warn("Error while mounting NextCloud: {}".format(error))
-    print("output_path_dir",output_path_dir)
+
     subprocess.run(["rclone", "copy", "rshare:data/models/", output_path_dir])
 
 except Exception as e:
     print(e)
     
 print("image_dir content",os.listdir(image_dir.name)[0])
+print("output_dir_model content",os.listdir(output_path_dir)[0])
 
 def train(**args):
     output={}

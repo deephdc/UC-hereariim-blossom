@@ -278,6 +278,7 @@ def train(**args):
         A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]            
         print("A1 ",A1)
         verif = A1[0].split('\\')
+        print(verif)
         if verif[-1]=='images':
             path_image_data = A1[0]
             path_masks_data = A1[1]

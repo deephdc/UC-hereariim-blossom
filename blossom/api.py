@@ -764,6 +764,15 @@ def train(**args):
     
     print(output)
     
+    from datetime import datetime
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    
+    f = open(os.path.join(output_zip_model_opt_thr_path_dir,"output_general_summary.txt"),"a")
+    f.write(dt_string+'_'+str(output))
+    f.close()
+    print("output_general_summary.txt newly created")
+    
     print("QUALITY OF RETRAIN MODEL :",output["retrain model"])
     if output["retrain model"]=="better":
 

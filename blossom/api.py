@@ -222,13 +222,14 @@ try:
     image_dir = tempfile.TemporaryDirectory()
     output_dir_model = tempfile.TemporaryDirectory()
     output_path_dir = output_dir_model.name
-    print("image_dir",image_dir)
+    print("image_dir",image_dir.name)
     result = subprocess.run(["rclone","listremotes"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = result.communicate()
-    print(output, error)
+    print("run",output, error)
     result = subprocess.Popen(["rclone", "copy","rshare:data/images/", image_dir.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print("image_dir content",os.listdir(image_dir.name)[0])
     output, error = result.communicate()
-    print(output, error)
+    print("Popen",output, error)
     if error:
         warnings.warn("Error while mounting NextCloud: {}".format(error))
     print("output_path_dir",output_path_dir)

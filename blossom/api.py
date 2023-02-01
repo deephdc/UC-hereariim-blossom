@@ -930,10 +930,10 @@ def predict(**kwargs):
 
     elif originalname[-3:] in ['zip','ZIP']:
         # Load model from gdrive
-        # output_dir_model = tempfile.TemporaryDirectory()
-        # output_path_dir = output_dir_model.name
+        output_dir_model = tempfile.TemporaryDirectory()
+        output_path_dir = output_dir_model.name
 
-        # subprocess.run(["rclone", "copy", "rshare:data/models/", output_path_dir])
+        subprocess.run(["rclone", "copy", "rshare:data/models/", output_path_dir])
         name_models_images = os.listdir(os.path.join(output_path_dir))[0]
         print("name_models_images",name_models_images)
         output_zip_path = os.path.join(output_path_dir,name_models_images)

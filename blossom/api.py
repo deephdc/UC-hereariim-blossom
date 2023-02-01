@@ -204,16 +204,6 @@ def get_train_args():
             missing="0.2",
             description="If focal loss selected, then choose your gamma value",
         ),
-        "Link_images": fields.Str(
-            required=False,
-            missing="None",
-            description="Link of image_user.zip located into google drive",  # needed to be parsed by UI
-        ),
-        "Link_model": fields.Str(
-            required=False,
-            missing="None",
-            description="Link of best_models_.zip located into google drive",  # needed to be parsed by UI
-        ),
     }
     return arg_dict
 
@@ -618,7 +608,6 @@ def train(**args):
 
     print("1")
     tensorboad = tf.keras.callbacks.TensorBoard(log_dir=paths.get_logs_dir())
-
     print("2")
     port = os.getenv('monitorPORT', 6006)
     print("3")
@@ -836,11 +825,6 @@ def get_predict_args():
             missing="None",
             location="form",
             description="Image",  # needed to be parsed by UI
-        ),
-        "Link": fields.Str(
-            required=False,
-            missing="None",
-            description="Link of best_models_.zip located into google drive",  # needed to be parsed by UI
         ),
         "accept": fields.Str(
             description="Media type(s) that is/are acceptable for the response.",

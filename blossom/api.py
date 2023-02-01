@@ -236,6 +236,11 @@ try:
     # print("image_dir",image_dir.name)
     # print("output_dir_model",output_path_dir)
     
+    print('rend rclone')
+    file1 = open('/srv/.rclone/rclone.conf', 'r')
+    print(file1.read())
+    
+    subprocess.run(["rclone","lsf","rshare:data"])
     subprocess.run(["rclone","copy","rshare:data/images/", image_dir.name])
     subprocess.run(["rclone","copy","rshare:data/models/", output_dir_model.name])
     

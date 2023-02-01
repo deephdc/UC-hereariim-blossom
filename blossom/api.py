@@ -223,7 +223,7 @@ try:
     print("date")
     subprocess.run(["date"])
     print("mount_nextcloud")
-    subprocess.run(["rclone"])
+    subprocess.run(["rclone","listremotes"])
     # print("mount_nextcloud")
     # image_dir = tempfile.TemporaryDirectory()
     # output_dir_model = tempfile.TemporaryDirectory()

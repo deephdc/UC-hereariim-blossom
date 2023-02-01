@@ -230,13 +230,17 @@ try:
     subprocess.run(["rclone","listremotes"])
     print("done")
     # print("mount_nextcloud")
-    # image_dir = tempfile.TemporaryDirectory()
-    # output_dir_model = tempfile.TemporaryDirectory()
+    image_dir = tempfile.TemporaryDirectory()
+    output_dir_model = tempfile.TemporaryDirectory()
     # output_path_dir = output_dir_model.name
     # print("image_dir",image_dir.name)
     # print("output_dir_model",output_path_dir)
     
-     
+    subprocess.run(["rclone","copy","rshare:data/images/", image_dir.name])
+    subprocess.run(["rclone","copy","rshare:data/models/", output_dir_model.name])
+    
+    print("image_dir",os.listdir(image_dir.name))
+    print("output_dir_model",os.listdir(output_dir_model.name))
     # result = subprocess.Popen(["rclone", "copy","rshare:data/images/", image_dir.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
     # output, error = result.communicate()
     # print("Popen",output, error)    

@@ -263,14 +263,7 @@ except Exception as e:
 def train(**args):
     output={}
     output["hyperparameter"]=args
-    backend.clear_session()
-    
-    print("Model downloading...")
-    
-    link_zip_file_images = yaml.safe_load(args["Link_images"])    
-    # Images zip
-    print("link_zip_file_images ",link_zip_file_images)
-    
+    backend.clear_session()        
     try:
         print(">> RSHARE",os.listdir(os.path.join(image_dir.name)))        
         name_img_zip_file = os.listdir(os.path.join(image_dir.name))[0]
@@ -280,10 +273,10 @@ def train(**args):
         with ZipFile(output_zip_path,'r') as zipObject:
             listOfFileNames = zipObject.namelist()
             # print(listOfFileNames)
-            for i in range(len(listOfFileNames)):
+            for i in tqdm(range(len(listOfFileNames))):
                 zipObject.extract(listOfFileNames[i],path=zip_dir.name)
         A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]            
-        # print("A1 ",A1)
+        print("A1 ",A1)
         verif = A1[0].split('\\')
         if verif[-1]=='images':
             path_image_data = A1[0]

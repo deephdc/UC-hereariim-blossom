@@ -35,7 +35,6 @@ import warnings
 
 import numpy as np
 import imageio
-import matplotlib.pyplot as plt
 
 from itertools import chain
 from skimage.morphology import label
@@ -136,7 +135,6 @@ def _catch_error(f):
 # except Exception as e:
 #     print(e)
 
-@_catch_error
 def get_metadata():
     """
     DO NOT REMOVE - All modules should have a get_metadata() function
@@ -206,84 +204,151 @@ def get_train_args():
             missing="0.2",
             description="If focal loss selected, then choose your gamma value",
         ),
-        "Link_images": fields.Str(
-            required=False,
-            missing="None",
-            description="Link of image_user.zip located into google drive",  # needed to be parsed by UI
-        ),
-        "Link_model": fields.Str(
-            required=False,
-            missing="None",
-            description="Link of best_models_.zip located into google drive",  # needed to be parsed by UI
-        ),
     }
     return arg_dict
+
+# os.system("rclone listremotes")
+
+try:
+    # print("date")
+    # subprocess.run(["date"])
+    # print("mount_nextcloud")
+    # subprocess.run(["rclone"])
+    # print("config file")
+    # subprocess.run(["rclone","config","file"])
+    # print("file")
+    # subprocess.run(["rclone","listremotes"])
+    # print("done")
+    # print("mount_nextcloud")
+    image_dir = tempfile.TemporaryDirectory()
+    output_dir_model = tempfile.TemporaryDirectory()
+    # output_path_dir = output_dir_model.name
+    # print("image_dir",image_dir.name)
+    # print("output_dir_model",output_path_dir)
+        
+    subprocess.run(["rclone","copy","rshare:data/images/", image_dir.name])
+    subprocess.run(["rclone","copy","rshare:data/models/", output_dir_model.name])
+    
+    print("image_dir",os.listdir(image_dir.name))
+    print("output_dir_model",os.listdir(output_dir_model.name))
+    # result = subprocess.Popen(["rclone", "copy","rshare:data/images/", image_dir.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
+    # output, error = result.communicate()
+    # print("Popen",output, error)    
+    # if error:
+    #     warnings.warn("Error while mounting NextCloud: {}".format(error))
+
+    # subprocess.run(["rclone", "copy", "rshare:data/models/", output_path_dir])
+
+except Exception as e:
+    print(e)
+    
+# print("image_dir content",os.listdir(image_dir.name)[0])
+# print("output_dir_model content",os.listdir(output_path_dir)[0])
 
 def train(**args):
     output={}
     output["hyperparameter"]=args
-    backend.clear_session()
-    
-    print("Model downloading...")
-    
-
-    
-    link_zip_file_images = yaml.safe_load(args["Link_images"])    
-    # Images zip
-    print("link_zip_file_images ",link_zip_file_images)
-    
+    backend.clear_session()        
     try:
-        image_dir = tempfile.TemporaryDirectory()
-        # mount_nextcloud('rshare:/data/dataset_files', paths.get_splits_dir())
-        mount_nextcloud('rshare:/data/images', os.path.join(image_dir.name,'images'))
-        print(">> RSHARE",os.listdir(os.path.join(image_dir.name,'images')))        
-    except Exception as e:
-        print(e)
-        if link_zip_file_images!="None":
-            output_dir_images = tempfile.TemporaryDirectory()
-            output_path_dir_images = output_dir_images.name
-            
-            id_file_images = link_zip_file_images.split('/')[-2]
-            url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
-            output_zip_path = os.path.join(output_path_dir_images,'image_user.zip')
-            print("Loading..")
-            gdown.download(url_images, output_zip_path, quiet=False)
-            # print(">>> output_dir_images",output_dir_images)
-            zip_dir = tempfile.TemporaryDirectory()
-            with ZipFile(output_zip_path,'r') as zipObject:
-                listOfFileNames = zipObject.namelist()
-                # print(listOfFileNames)
-                for i in range(len(listOfFileNames)):
-                    zipObject.extract(listOfFileNames[i],path=zip_dir.name)
-            A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]            
-            # print("A1 ",A1)
-            verif = A1[0].split('\\')
-            if verif[-1]=='images':
-                path_image_data = A1[0]
-                path_masks_data = A1[1]
-            else:
-                path_image_data = A1[1]
-                path_masks_data = A1[0]        
+        print(">> RSHARE",os.listdir(os.path.join(image_dir.name)))        
+        name_img_zip_file = os.listdir(os.path.join(image_dir.name))[0]
+        output_zip_path = os.path.join(image_dir.name,name_img_zip_file)
+
+        zip_dir = tempfile.TemporaryDirectory()
+        with ZipFile(output_zip_path,'r') as zipObject:
+            listOfFileNames = zipObject.namelist()
+            # print(listOfFileNames)
+            for i in tqdm(range(len(listOfFileNames))):
+                zipObject.extract(listOfFileNames[i],path=zip_dir.name)
+        A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]            
+        print("A1 ",A1)
+        verif = A1[0].split('\\')
+        print(verif)
+        if verif[-1]=='images':
+            path_image_data = A1[0]
+            path_masks_data = A1[1]
         else:
-            path_image_data = cfg.DATA_IMAGE
-            path_masks_data = cfg.DATA_MASK
+            path_image_data = A1[1]
+            path_masks_data = A1[0]
+        print(path_image_data)
+        print(path_masks_data)
+    except Exception as e:
+        path_image_data = cfg.DATA_IMAGE
+        path_masks_data = cfg.DATA_MASK
+    print('done')
+
+    # except Exception as e:
+    #     print(e)
+    #     if link_zip_file_images!="None":
+    #         output_dir_images = tempfile.TemporaryDirectory()
+    #         output_path_dir_images = output_dir_images.name
+            
+    #         id_file_images = link_zip_file_images.split('/')[-2]
+    #         url_images = "https://drive.google.com/uc?export=download&id="+id_file_images
+    #         output_zip_path = os.path.join(output_path_dir_images,'image_user.zip')
+    #         print("Loading..")
+    #         gdown.download(url_images, output_zip_path, quiet=False)
+    #         # print(">>> output_dir_images",output_dir_images)
+    #         zip_dir = tempfile.TemporaryDirectory()
+    #         with ZipFile(output_zip_path,'r') as zipObject:
+    #             listOfFileNames = zipObject.namelist()
+    #             # print(listOfFileNames)
+    #             for i in range(len(listOfFileNames)):
+    #                 zipObject.extract(listOfFileNames[i],path=zip_dir.name)
+    #         A1 = [os.path.join(zip_dir.name,ix) for ix in os.listdir(zip_dir.name)]            
+    #         # print("A1 ",A1)
+    #         verif = A1[0].split('\\')
+    #         if verif[-1]=='images':
+    #             path_image_data = A1[0]
+    #             path_masks_data = A1[1]
+    #         else:
+    #             path_image_data = A1[1]
+    #             path_masks_data = A1[0]        
+    #     else:
+    #         path_image_data = cfg.DATA_IMAGE
+    #         path_masks_data = cfg.DATA_MASK
 
     # Model zip
-    output_dir_model = tempfile.TemporaryDirectory()
+    print(">> MODEL",os.listdir(output_dir_model.name))
     output_path_dir_model = output_dir_model.name
-        
-    link_zip_file_model = yaml.safe_load(args["Link_model"])
-    id_file_model = link_zip_file_model.split('/')[-2]
-    url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
-    
-    output_zip_path = os.path.join(output_path_dir_model,'models_images.zip')
+    name_models_zip_file = os.listdir(output_dir_model.name)[0]
+    output_zip_path = os.path.join(output_dir_model.name,name_models_zip_file)
     print("Loading..")
-    gdown.download(url_model, output_zip_path, quiet=False)
-    # print(">>> output_dir_model",output_dir_model)
+    
     with ZipFile(output_zip_path,'r') as zipObject:
         listOfFileNames = zipObject.namelist()
         for i in range(len(listOfFileNames)):
             zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
+    # try:
+    #     output_dir_model = tempfile.TemporaryDirectory()
+    #     output_path_dir_model = output_dir_model.name
+    #     subprocess.run(["rclone", "copy","rshare:data/models/", output_dir_model.name])
+    #     name_models_zip_file = os.listdir(os.path.join(output_dir_model.name))[0]
+    #     output_zip_path = os.path.join(output_dir_model.name,name_models_zip_file)
+    #     print("Loading..")
+        
+    #     with ZipFile(output_zip_path,'r') as zipObject:
+    #         listOfFileNames = zipObject.namelist()
+    #         for i in range(len(listOfFileNames)):
+    #             zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
+
+    # except Exception as e:
+    #     print(e)
+    #     output_dir_model = tempfile.TemporaryDirectory()
+    #     output_path_dir_model = output_dir_model.name
+            
+    #     link_zip_file_model = yaml.safe_load(args["Link_model"])
+    #     id_file_model = link_zip_file_model.split('/')[-2]
+    #     url_model = "https://drive.google.com/uc?export=download&id="+id_file_model
+        
+    #     output_zip_path = os.path.join(output_path_dir_model,'models_images.zip')
+    #     print("Loading..")
+    #     gdown.download(url_model, output_zip_path, quiet=False)
+    #     # print(">>> output_dir_model",output_dir_model)
+    #     with ZipFile(output_zip_path,'r') as zipObject:
+    #         listOfFileNames = zipObject.namelist()
+    #         for i in range(len(listOfFileNames)):
+    #             zipObject.extract(listOfFileNames[i],path=output_path_dir_model)
     
     # print(os.listdir(output_path_dir_model))
     model_h5_path = os.path.join(output_path_dir_model,"best_model_W_BCE_model.h5")
@@ -543,7 +608,6 @@ def train(**args):
 
     print("1")
     tensorboad = tf.keras.callbacks.TensorBoard(log_dir=paths.get_logs_dir())
-
     print("2")
     port = os.getenv('monitorPORT', 6006)
     print("3")
@@ -700,46 +764,59 @@ def train(**args):
     
     print(output)
     
+    from datetime import datetime
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    
+    f = open(os.path.join(output_zip_model_opt_thr_path_dir,"output_general_summary.txt"),"a")
+    f.write(dt_string+'_'+str(output))
+    f.close()
+    print("output_general_summary.txt newly created")
+    
     print("QUALITY OF RETRAIN MODEL :",output["retrain model"])
     if output["retrain model"]=="better":
 
         A = os.listdir(output_zip_model_opt_thr_path_dir) #contient seulement et uniquement des fichiers !!!
-        # print(os.listdir(path_folder_to_image)) 
         PATH_mask = [os.path.join(output_zip_model_opt_thr_path_dir,ix) for ix in A]
-        print(PATH_mask)
 
-        print("Downloading elements...")
-        print("GoogleAuth ...")
-        gauth = GoogleAuth()    
+        for ix in PATH_mask:
+            subprocess.run(["rclone", "copy", ix, "rshare:data/output/"])
+            print(ix,' done..')
+        print("Shutdown")
 
-        gauth.LoadCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
-        if gauth.credentials is None:
-            print("Authenticate if they're not there")
-            gauth.LocalWebserverAuth()
-        elif gauth.access_token_expired:
-            print("Refresh them if expired")
-            gauth.Refresh()
-        else:
-            print("Initialize the saved creds")
-            gauth.Authorize()
-        print("Save the current credentials to a file")
-        gauth.SaveCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
 
-        print("GoogleAuth done")   
-        drive = GoogleDrive(gauth)  
-        print("Connected")
+    #     print("Downloading elements...")
+    #     print("GoogleAuth ...")
+    #     gauth = GoogleAuth()    
 
-        id_output_folder = "1JMeVNJPrOtK13ZIqE8Q7R5PSqFpHRGFZ"
-        for iy in PATH_mask:
-            print(iy)
-            gfile = drive.CreateFile({'parents': [{'id': id_output_folder}]})
-            print("1/3",iy)
-            gfile.SetContentFile(iy)
-            print("2/3",iy)
-            gfile.Upload() # Upload the file .
-            print("3/3",iy)
-        print("done")
-    print("Shutdown")
+    #     gauth.LoadCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
+    #     if gauth.credentials is None:
+    #         print("Authenticate if they're not there")
+    #         gauth.LocalWebserverAuth()
+    #     elif gauth.access_token_expired:
+    #         print("Refresh them if expired")
+    #         gauth.Refresh()
+    #     else:
+    #         print("Initialize the saved creds")
+    #         gauth.Authorize()
+    #     print("Save the current credentials to a file")
+    #     gauth.SaveCredentialsFile(os.path.join(output_path_dir_model,"mycreds.txt"))
+
+    #     print("GoogleAuth done")   
+    #     drive = GoogleDrive(gauth)  
+    #     print("Connected")
+
+    #     id_output_folder = "1JMeVNJPrOtK13ZIqE8Q7R5PSqFpHRGFZ"
+    #     for iy in PATH_mask:
+    #         print(iy)
+    #         gfile = drive.CreateFile({'parents': [{'id': id_output_folder}]})
+    #         print("1/3",iy)
+    #         gfile.SetContentFile(iy)
+    #         print("2/3",iy)
+    #         gfile.Upload() # Upload the file .
+    #         print("3/3",iy)
+    #     print("done")
+    # print("Shutdown")
     return output
 
 
@@ -757,11 +834,6 @@ def get_predict_args():
             missing="None",
             location="form",
             description="Image",  # needed to be parsed by UI
-        ),
-        "Link": fields.Str(
-            required=False,
-            missing="None",
-            description="Link of best_models_.zip located into google drive",  # needed to be parsed by UI
         ),
         "accept": fields.Str(
             description="Media type(s) that is/are acceptable for the response.",
@@ -783,19 +855,27 @@ def predict(**kwargs):
 
     print(originalname)
 
-    link_zip_file = kwargs["Link"] 
-    id_file = link_zip_file.split('/')[-2]
-    url = "https://drive.google.com/uc?export=download&id="+id_file
+    # link_zip_file = kwargs["Link"]
+    # id_file = link_zip_file.split('/')[-2]
+    # url = "https://drive.google.com/uc?export=download&id="+id_file
 
     if originalname[-3:] in ['JPG','jpg','png','PNG']:
         # Load model from gdrive
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir = output_dir_model.name
-        
-        output_zip_path = os.path.join(output_path_dir,'models_images.zip')
-        # print("Loading..")
-        gdown.download(url, output_zip_path, quiet=False)
-        # print(">>> output_dir_model",output_dir_model)
+        print("mount_nextcloud")
+        subprocess.run(["rclone", "copy","--update", "rshare:data/models/", output_path_dir])
+        print(os.listdir(output_path_dir))
+        # print("mount_nextcloud2")
+        # mount_nextcloud('rshare:/data/models/',output_path_dir)
+        name_models_images = os.listdir(output_path_dir)[0]
+        print("name_models_images",name_models_images)
+        output_zip_path = os.path.join(output_path_dir,name_models_images)
+        print("output_zip_path",output_zip_path)
+        # output_zip_path = os.path.join(output_path_dir,'models_images.zip')
+        # # print("Loading..")
+        # gdown.download(url, output_zip_path, quiet=False)
+        # # print(">>> output_dir_model",output_dir_model)
         with ZipFile(output_zip_path,'r') as zipObject:
             listOfFileNames = zipObject.namelist()
             for i in range(len(listOfFileNames)):
@@ -849,11 +929,16 @@ def predict(**kwargs):
         # Load model from gdrive
         output_dir_model = tempfile.TemporaryDirectory()
         output_path_dir = output_dir_model.name
-        
-        output_zip_path = os.path.join(output_path_dir,'models_images.zip')
-        print("Loading..")
-        gdown.download(url, output_zip_path, quiet=False)
-        print(">>> output_dir_model",output_dir_model)
+
+        subprocess.run(["rclone", "copy", "rshare:data/models/", output_path_dir])
+        name_models_images = os.listdir(os.path.join(output_path_dir))[0]
+        print("name_models_images",name_models_images)
+        output_zip_path = os.path.join(output_path_dir,name_models_images)
+        print("output_zip_path",output_zip_path)
+        # output_zip_path = os.path.join(output_path_dir,'models_images.zip')
+        # print("Loading..")
+        # gdown.download(url, output_zip_path, quiet=False)
+        # print(">>> output_dir_model",output_dir_model)
         with ZipFile(output_zip_path,'r') as zipObject:
             listOfFileNames = zipObject.namelist()
             for i in range(len(listOfFileNames)):
